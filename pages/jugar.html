@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jugar - El Impostor</title>
+    <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+    <div class="menu-container">
+        <h1>Selecciona el Modo de Juego</h1>
+        
+        <div class="game-mode-container">
+            <div class="game-mode-card" onclick="window.location.href='local/crear_partida.html'">
+                <img src="../src/local.png" alt="Jugar Local" class="game-mode-image">
+                <h3 class="game-mode-title">Jugar Partida Local</h3>
+            </div>
+            
+            <div class="game-mode-card">
+                <img src="../src/Online.png" alt="Jugar Online" class="game-mode-image">
+                <h3 class="game-mode-title">Jugar Partida Online</h3>
+            </div>
+        </div>
+        
+        <button class="button-small" onclick="window.location.href='../index.html'">Volver</button>
+    </div>
+</body>
+</html>

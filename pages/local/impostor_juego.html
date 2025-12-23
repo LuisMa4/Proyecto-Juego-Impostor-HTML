@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reunión - El Impostor</title>
+    <link rel="stylesheet" href="../../styles.css">
+</head>
+<body>
+    <!-- Contenedor de notificaciones -->
+    <div id="notification-container"></div>
+    
+    <button class="button-back" onclick="finalizarPartida()">Finalizar Partida</button>
+    
+    <div class="menu-container">
+        <h1>¡Inicien Votación!</h1>
+        
+        <div id="jugadores-lista" class="jugadores-grid">
+            <!-- Los nombres se generarán dinámicamente -->
+        </div>
+
+        <button class="button" onclick="siguienteRonda()" style="margin-top: -20px;">Siguiente Ronda</button>
+    </div>
+
+    <script>
+        // Obtener configuración
+        const config = JSON.parse(localStorage.getItem('configPartida'));
+        
+        if (!config || !config.nombres) {
+            window.location.href = 'crear_partida.html';
+        }
+
+        const jugadoresLista = document.getElementById('jugadores-lista');
+        const numJugadores = config.nombres.length;
+        const radio = 120; // Radio del círculo
+        const anguloInicial = -Math.PI / 2; // Empezar desde arriba
+
+        // Ajustar el radio según el número de jugadores
+        let radioAjustado = radio;
+        if (numJugadores >= 4) {
+            radioAjustado = 160; // Más espacio para 4+ jugadores
+        }
+        if (numJugadores >= 6) {
+            radioAjustado = 190; // Aún más espacio para 6+ jugadores
+        }
+        if (numJugadores >= 8) {
+            radioAjustado = 220; // Máximo espacio para 8+ jugadores
+        }
+        
+        // Mostrar todos los jugadores en círculo
+        config.nombres.forEach((jugador, index) => {
+            const nombreJugador = typeof jugador === 'object' ? jugador.nombre : jugador;
+            const fotoJugador = typeof jugador === 'object' ? jugador.foto : null;
+            
+            // Calcular posición en el círculo
+            const angulo = anguloInicial + (index * 2 * Math.PI / numJugadores);
+            const x = Math.cos(angulo) * radioAjustado;
+            const y = Math.sin(angulo) * radioAjustado;
+            
+            const div = document.createElement('div');
+            div.className = 'jugador-item';
+            div.style.transform = `translate(${x}px, ${y}px)`;
+            
+            if (fotoJugador) {
+                div.innerHTML = `
+                    <img src="${fotoJugador}" alt="${nombreJugador}" style="width: 90px; height: 90px; border-radius: 50%; border: 3px solid #2E7D32; object-fit: cover;">
+                    <h3 style="margin: 10px 0 0 0; color: #2E7D32; font-size: 1.05rem; text-align: center;">${nombreJugador}</h3>
+                `;
+            } else {
+                div.innerHTML = `
+                    <div style="width: 90px; height: 90px; border-radius: 50%; border: 3px solid #2E7D32; background-color: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; color: #999;">👤</div>
+                    <h3 style="margin: 10px 0 0 0; color: #2E7D32; font-size: 1.05rem; text-align: center;">${nombreJugador}</h3>
+                `;
+            }
+            jugadoresLista.appendChild(div);
+        });
+
+        function siguienteRonda() {
+            // Regresar al juego local
+            window.location.href = 'juego_local.html';
+        }
+
+        function finalizarPartida() {
+            // Guardar toda la configuración de la partida
+            localStorage.setItem('configGuardada', JSON.stringify(config));
+            
+            // Limpiar configuración de partida activa
+            localStorage.removeItem('configPartida');
+            
+            // Regresar a la página de configuración
+            window.location.href = 'crear_partida.html';
+        }
+    </script>
+
+    <style>
+        .jugadores-grid {
+            position: relative;
+            width: 100%;
+            height: 550px;
+            margin: 60px 0 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .jugador-item {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: white;
+            border-radius: 15px;
+            padding: 15px 12px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            width: 130px;
+        }
+    </style>
+</body>
+</html>

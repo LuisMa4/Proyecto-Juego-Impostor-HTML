@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego Local - El Impostor</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <style>
+        .evento-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.85);
+            z-index: 3000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .evento-overlay.activo {
+            display: flex;
+            animation: fadeIn 0.3s;
+        }
+
+        .evento-content {
+            background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
+            padding: 50px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            max-width: 500px;
+            animation: scaleIn 0.5s;
+        }
+
+        .evento-content h1 {
+            color: white;
+            font-size: 2.5rem;
+            margin: 0 0 20px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .evento-content p {
+            color: white;
+            font-size: 1.3rem;
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes scaleIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Contenedor de notificaciones -->
+    <div id="notification-container"></div>
+    
+    <!-- Modal de evento especial -->
+    <div id="evento-overlay" class="evento-overlay">
+        <div class="evento-content">
+            <h1>¡EVENTO ESPECIAL!</h1>
+            <p>Esta ronda habrá <strong>UN IMPOSTOR EXTRA</strong></p>
+        </div>
+    </div>
+    
+    <div class="menu-container">
+        <h1>Turno de <span id="nombre-jugador">Jugador</span></h1>
+        
+        <div class="game-container">
+            <div class="card-flip" id="card-flip">
+                <div class="card-front">
+                    <img id="foto-jugador" src="" alt="Foto" style="width: 100px; height: 100px; border-radius: 50%; border: 3px solid #2E7D32; object-fit: cover; margin-bottom: 15px; display: none;">
+                    <h2 id="nombre-en-front" style="font-size: 2.5rem; margin: 0 0 30px 0; color: #2E7D32;">Jugador</h2>
+                    <p style="font-size: 0.9rem; color: #666; margin: 5px 0;">Presiona y mantén</p>
+                    <p style="font-size: 0.9rem; color: #666; margin: 5px 0;">para ver tu rol</p>
+                </div>
+                <div class="card-back" id="card-back">
+                    <div id="card-back-content">
+                        <h3 id="nombre-en-tarjeta" style="font-size: 1.8rem; margin: 0;">Jugador</h3>
+                    </div>
+                </div>
+            </div>
+
+            <button class="button" id="next-button">Pasar a <span id="next-player">Jugador</span></button>
+        </div>
+    </div>
+
+    <script>
+        // Obtener configuración
+        const config = JSON.parse(localStorage.getItem('configPartida'));
+        
+        if (!config || !config.nombres) {
+            window.location.href = 'crear_partida.html';
+        }
+
+        const nombres = config.nombres;
+        const numJugadores = config.jugadores;
+        const numImpostores = config.impostores;
+        const mostrarPistas = config.pistas;
+        let jugadorActual = 0;
+        let palabras = [];
+        let rolesAsignados = [];
+        let palabraRonda = null; // Palabra de la ronda actual (misma para todos los inocentes)
+
+        // Función para mostrar notificaciones
+        function mostrarNotificacion(mensaje, tipo = 'error') {
+            const container = document.getElementById('notification-container');
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${tipo}`;
+            notification.textContent = mensaje;
+            
+            container.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 10);
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    container.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        // Asignar roles (impostores aleatorios)
+        function asignarRoles() {
+            // Evento especial solo si:
+            // - Hay 5 o más jugadores
+            // - Los impostores actuales son menos del 50%
+            // - Con +1 impostor seguirían siendo menos del 50%
+            const eventoEspecial = numJugadores >= 5 && 
+                                  numImpostores < numJugadores / 2 && 
+                                  (numImpostores + 1) < numJugadores / 2 &&
+                                  Math.random() < 1.0; // 100% para prueba
+            let impostoresRonda = numImpostores;
+            
+            if (eventoEspecial && numImpostores < numJugadores - 1) {
+                impostoresRonda = numImpostores + 1;
+                // Mostrar notificación de evento especial
+                const eventoOverlay = document.getElementById('evento-overlay');
+                eventoOverlay.classList.add('activo');
+                setTimeout(() => {
+                    eventoOverlay.classList.remove('activo');
+                }, 3000);
+            }
+            
+            rolesAsignados = new Array(numJugadores).fill('inocente');
+            const impostoresIndices = [];
+            
+            while (impostoresIndices.length < impostoresRonda) {
+                const indice = Math.floor(Math.random() * numJugadores);
+                if (!impostoresIndices.includes(indice)) {
+                    impostoresIndices.push(indice);
+                    rolesAsignados[indice] = 'impostor';
+                }
+            }
+        }
+
+        // Cargar palabras de las categorías seleccionadas
+        async function cargarPalabras() {
+            const categoriasDefault = [
+                { id: 1, nombre: 'Cosas cotidianas', archivo: '../../data/categorias/cosas_cotidianas.csv' },
+                { id: 2, nombre: 'Personajes famosos', archivo: '../../data/categorias/famosos.csv' },
+                { id: 3, nombre: 'Futbolistas', archivo: '../../data/categorias/futbolistas.csv' },
+                { id: 4, nombre: 'Películas', archivo: '../../data/categorias/peliculas.csv' }
+            ];
+
+            const listasSeleccionadas = config.listas.map(id => parseInt(id));
+            
+            for (const listaId of listasSeleccionadas) {
+                const categoria = categoriasDefault.find(c => c.id === listaId);
+                if (categoria) {
+                    try {
+                        const response = await fetch(categoria.archivo);
+                        const csv = await response.text();
+                        const lineas = csv.split('\n').filter(line => line.trim() !== '');
+                        
+                        for (let i = 1; i < lineas.length; i++) {
+                            const partes = lineas[i].split(',');
+                            if (partes[0]) {
+                                palabras.push({
+                                    palabra: partes[0].trim(),
+                                    pista: partes[1] ? partes[1].trim() : ''
+                                });
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error al cargar categoría:', error);
+                    }
+                }
+            }
+
+            if (palabras.length === 0) {
+                mostrarNotificacion('No se pudieron cargar las palabras', 'error');
+            }
+        }
+
+        // Mostrar información del jugador actual
+        function mostrarJugador() {
+            const nombreJugadorSpan = document.getElementById('nombre-jugador');
+            const nombreActual = typeof nombres[jugadorActual] === 'object' ? nombres[jugadorActual].nombre : nombres[jugadorActual];
+            const fotoActual = typeof nombres[jugadorActual] === 'object' ? nombres[jugadorActual].foto : null;
+            nombreJugadorSpan.textContent = nombreActual;
+
+            const nextPlayerSpan = document.getElementById('next-player');
+            const siguienteIndice = (jugadorActual + 1) % numJugadores;
+            
+            if (siguienteIndice === 0) {
+                // Si el siguiente es el primero, significa que terminamos la ronda
+                document.getElementById('next-button').textContent = 'Ir a Reunión';
+            } else {
+                const nombreSiguiente = typeof nombres[siguienteIndice] === 'object' ? nombres[siguienteIndice].nombre : nombres[siguienteIndice];
+                nextPlayerSpan.textContent = nombreSiguiente;
+            }
+
+            // Actualizar nombre en la tarjeta frontal
+            document.getElementById('nombre-en-front').textContent = nombreActual;
+            
+            // Actualizar foto en la tarjeta frontal
+            const fotoJugador = document.getElementById('foto-jugador');
+            if (fotoActual) {
+                fotoJugador.src = fotoActual;
+                fotoJugador.style.display = 'block';
+            } else {
+                fotoJugador.style.display = 'none';
+            }
+
+            // Resetear tarjeta
+            const card = document.getElementById('card-flip');
+            const cardBack = document.getElementById('card-back');
+            const cardBackContent = document.getElementById('card-back-content');
+            
+            card.classList.remove('flipped');
+            cardBack.style.backgroundColor = 'white';
+            cardBack.style.color = '#333';
+            
+            // Mostrar solo el nombre
+            cardBackContent.innerHTML = `<h3 style="font-size: 1.8rem; margin: 0;">${nombreActual}</h3>`;
+        }
+
+        // Mostrar rol al presionar la tarjeta
+        const card = document.getElementById('card-flip');
+        let presionando = false;
+
+        card.addEventListener('mousedown', () => {
+            presionando = true;
+            setTimeout(() => {
+                if (presionando) {
+                    mostrarRol();
+                }
+            }, 200);
+        });
+
+        card.addEventListener('mouseup', () => {
+            presionando = false;
+            ocultarRol();
+        });
+
+        card.addEventListener('mouseleave', () => {
+            if (presionando) {
+                presionando = false;
+                ocultarRol();
+            }
+        });
+
+        // Touch events para móviles
+        card.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            presionando = true;
+            setTimeout(() => {
+                if (presionando) {
+                    mostrarRol();
+                }
+            }, 200);
+        });
+
+        card.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            presionando = false;
+            ocultarRol();
+        });
+
+        function mostrarRol() {
+            const card = document.getElementById('card-flip');
+            const cardBack = document.getElementById('card-back');
+            const cardBackContent = document.getElementById('card-back-content');
+
+            if (rolesAsignados[jugadorActual] === 'impostor') {
+                cardBack.style.backgroundColor = '#d32f2f';
+                cardBack.style.color = 'white';
+                
+                let contenido = `<h2 style="font-size: 2.5rem; margin: 0; color: white;">¡Eres el IMPOSTOR!</h2>`;
+                
+                if (mostrarPistas && palabraRonda.pista) {
+                    contenido += `<p style="font-size: 1.1rem; margin-top: 20px; color: white;">Pista: ${palabraRonda.pista}</p>`;
+                }
+                
+                cardBackContent.innerHTML = contenido;
+            } else {
+                cardBack.style.backgroundColor = '#2E7D32';
+                cardBack.style.color = 'white';
+                
+                let contenido = `<h2 style="font-size: 2.5rem; margin: 0; color: white;">${palabraRonda.palabra}</h2>`;
+                
+                cardBackContent.innerHTML = contenido;
+            }
+
+            card.classList.add('flipped');
+        }
+
+        function ocultarRol() {
+            const card = document.getElementById('card-flip');
+            const cardBack = document.getElementById('card-back');
+            const cardBackContent = document.getElementById('card-back-content');
+            
+            // Volver al estado blanco con el nombre
+            cardBack.style.backgroundColor = 'white';
+            cardBack.style.color = '#333';
+            cardBackContent.innerHTML = `<h3 style="font-size: 1.8rem; margin: 0;">${nombres[jugadorActual]}</h3>`;
+            
+            card.classList.remove('flipped');
+        }
+
+        // Pasar al siguiente jugador
+        document.getElementById('next-button').addEventListener('click', () => {
+            jugadorActual = (jugadorActual + 1) % numJugadores;
+            
+            if (jugadorActual === 0) {
+                // Terminamos la ronda, ir a la pantalla de reunión
+                window.location.href = 'impostor_juego.html';
+            } else {
+                mostrarJugador();
+            }
+        });
+
+        // Inicializar juego
+        async function iniciarJuego() {
+            await cargarPalabras();
+            asignarRoles();
+            
+            // Asignar UNA palabra para toda la ronda
+            palabraRonda = palabras[Math.floor(Math.random() * palabras.length)];
+            
+            mostrarJugador();
+        }
+
+        iniciarJuego();
+    </script>
+</body>
+</html>

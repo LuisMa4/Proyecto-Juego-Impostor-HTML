@@ -1,0 +1,24 @@
+{
+  "listas": [
+    {
+      "id": 1,
+      "nombre": "Cosas cotidianas"
+    },
+    {
+      "id": 2,
+      "nombre": "Famosos"
+    },
+    {
+      "id": 3,
+      "nombre": "Futbolistas"
+    },
+    {
+      "id": 4,
+      "nombre": "Profesiones"
+    },
+    {
+      "id": 5,
+      "nombre": "Películas"
+    }
+  ]
+}

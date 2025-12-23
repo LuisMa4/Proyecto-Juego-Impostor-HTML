@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Impostor Juego</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="menu-container">
+        <h1>Bienvenido a el Impostor</h1>
+        <button class="button" onclick="window.location.href='pages/jugar.html'">¡Jugar!</button>
+        <button class="button" onclick="window.location.href='pages/configuracion.html'">Configuración</button>
+    </div>
+    
+    <div class="footer">
+        <a href="#" id="terminos-link">Términos y Condiciones</a>
+    </div>
+
+    <!-- Modal de Términos y Condiciones -->
+    <div id="modal-terminos" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Términos y Condiciones</h2>
+            <div class="modal-text">
+                <p>Bienvenido a El Impostor. Al usar este juego, aceptas los siguientes términos y condiciones:</p>
+                <ul>
+                    <li>Este juego es solo para entretenimiento.</li>
+                    <li>No nos hacemos responsables por cualquier problema técnico.</li>
+                    <li>Todos los derechos reservados.</li>
+                    <li>El uso del juego implica la aceptación de estos términos.</li>
+                    <li>Nos reservamos el derecho de modificar estos términos en cualquier momento.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Obtener elementos
+        const modal = document.getElementById('modal-terminos');
+        const link = document.getElementById('terminos-link');
+        const span = document.getElementsByClassName('close')[0];
+
+        // Abrir modal al hacer clic en el enlace
+        link.onclick = function(e) {
+            e.preventDefault();
+            modal.style.display = 'block';
+        }
+
+        // Cerrar modal al hacer clic en la X
+        span.onclick = function() {
+            modal.style.display = 'none';
+        }
+
+        // Cerrar modal al hacer clic fuera del contenido
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

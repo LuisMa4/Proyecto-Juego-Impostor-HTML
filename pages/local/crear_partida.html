@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear Partida Local - El Impostor</title>
+    <link rel="stylesheet" href="../../styles.css">
+</head>
+<body>
+    <!-- Contenedor de notificaciones -->
+    <div id="notification-container"></div>
+    
+    <button class="button-back" onclick="window.location.href='../jugar.html'">Volver</button>
+    
+    <div class="menu-container">
+        <h1>Crear Partida Local</h1>
+        
+        <div class="config-form">
+            <!-- Número de Jugadores -->
+            <div class="form-group">
+                <label for="num-jugadores">Número de Jugadores:</label>
+                <div class="number-input">
+                    <button type="button" class="btn-number" onclick="cambiarJugadores(-1)">-</button>
+                    <input type="number" id="num-jugadores" value="3" min="3" readonly>
+                    <button type="button" class="btn-number" onclick="cambiarJugadores(1)">+</button>
+                </div>
+            </div>
+
+            <!-- Número de Impostores -->
+            <div class="form-group">
+                <label for="num-impostores">Número de Impostores:</label>
+                <div class="number-input">
+                    <button type="button" class="btn-number" onclick="cambiarImpostores(-1)">-</button>
+                    <input type="number" id="num-impostores" value="1" min="0" readonly>
+                    <button type="button" class="btn-number" onclick="cambiarImpostores(1)">+</button>
+                </div>
+            </div>
+
+            <!-- Selección de Listas -->
+            <div class="form-group">
+                <label>Categorías:</label>
+                <div class="checkbox-group" id="listas-container">
+                    <!-- Se llenarán dinámicamente con JavaScript -->
+                </div>
+                <div class="checkbox-group" style="margin-top: 0; padding: 0; border-radius: 0 0 8px 8px;">
+                    <input type="file" id="file-input" accept=".csv" style="display: none;" onchange="importarCategoria()">
+                    <button class="import-button" onclick="document.getElementById('file-input').click()">
+                        📁 Importar Categoría
+                    </button>
+                </div>
+            </div>
+
+            <!-- Activar Pistas -->
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="pistas" class="checkbox-input">
+                    <span>Activar Pistas</span>
+                </label>
+                <p class="hint-text">Se indicará la categoría, no arruinará la experiencia de juego</p>
+            </div>
+
+            <button class="button" onclick="iniciarPartida()">Iniciar Partida</button>
+        </div>
+    </div>
+
+    <script>
+        let numJugadores = 3;
+        let numImpostores = 1;
+
+        // Lista de categorías por defecto con sus archivos CSV
+        const categoriasDefault = [
+            { id: 1, nombre: 'Cosas cotidianas', archivo: '../../data/categorias/cosas_cotidianas.csv' },
+            { id: 2, nombre: 'Personajes famosos', archivo: '../../data/categorias/famosos.csv' },
+            { id: 3, nombre: 'Futbolistas', archivo: '../../data/categorias/futbolistas.csv' },
+            { id: 4, nombre: 'Películas', archivo: '../../data/categorias/peliculas.csv' }
+        ];
+
+        // Cargar categorías por defecto
+        const container = document.getElementById('listas-container');
+        categoriasDefault.forEach(categoria => {
+            const div = document.createElement('div');
+            div.className = 'checkbox-item';
+            div.innerHTML = `
+                <label class="checkbox-label">
+                    <input type="checkbox" name="lista" value="${categoria.id}" class="checkbox-input" data-archivo="${categoria.archivo}">
+                    <span>${categoria.nombre}</span>
+                </label>
+            `;
+            container.appendChild(div);
+        });
+
+        // Restaurar configuración previa si existe
+        const configGuardadaStr = localStorage.getItem('configGuardada');
+        if (configGuardadaStr) {
+            const config = JSON.parse(configGuardadaStr);
+            
+            // Restaurar valores
+            numJugadores = config.jugadores;
+            numImpostores = config.impostores;
+            
+            document.getElementById('num-jugadores').value = numJugadores;
+            document.getElementById('num-impostores').value = numImpostores;
+            
+            // Marcar las categorías seleccionadas
+            if (config.listas && config.listas.length > 0) {
+                config.listas.forEach(listaId => {
+                    const checkbox = document.querySelector(`input[name="lista"][value="${listaId}"]`);
+                    if (checkbox) {
+                        checkbox.checked = true;
+                    }
+                });
+            }
+            
+            // Restaurar pistas
+            document.getElementById('pistas').checked = config.pistas;
+        }
+
+        // Función para mostrar notificaciones
+        function mostrarNotificacion(mensaje, tipo = 'error') {
+            const container = document.getElementById('notification-container');
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${tipo}`;
+            notification.textContent = mensaje;
+            
+            container.appendChild(notification);
+            
+            // Mostrar con animación
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 10);
+            
+            // Ocultar y remover después de 3 segundos
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    container.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        function cambiarJugadores(delta) {
+            const input = document.getElementById('num-jugadores');
+            const nuevoValor = numJugadores + delta;
+            if (nuevoValor >= 3) {
+                numJugadores = nuevoValor;
+                input.value = numJugadores;
+                
+                // Actualizar nombres guardados si existen
+                const configGuardadaStr = localStorage.getItem('configGuardada');
+                if (configGuardadaStr) {
+                    const configGuardada = JSON.parse(configGuardadaStr);
+                    if (configGuardada.nombres) {
+                        // Si reducimos jugadores, quitar los últimos
+                        if (delta < 0 && configGuardada.nombres.length > nuevoValor) {
+                            configGuardada.nombres = configGuardada.nombres.slice(0, nuevoValor);
+                        }
+                        // Actualizar el número de jugadores en la config guardada
+                        configGuardada.jugadores = nuevoValor;
+                        localStorage.setItem('configGuardada', JSON.stringify(configGuardada));
+                    }
+                }
+                
+                // Ajustar impostores si exceden jugadores
+                if (numImpostores >= numJugadores) {
+                    numImpostores = numJugadores - 1;
+                    document.getElementById('num-impostores').value = numImpostores;
+                }
+            }
+        }
+
+        function cambiarImpostores(delta) {
+            const input = document.getElementById('num-impostores');
+            const nuevoValor = numImpostores + delta;
+            if (nuevoValor >= 0 && nuevoValor < numJugadores) {
+                numImpostores = nuevoValor;
+                input.value = numImpostores;
+            }
+        }
+
+        function importarCategoria() {
+            const fileInput = document.getElementById('file-input');
+            const file = fileInput.files[0];
+            
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const csvContent = e.target.result;
+                        const lines = csvContent.split('\n').filter(line => line.trim() !== '');
+                        
+                        if (lines.length < 2) {
+                            alert('El archivo CSV debe tener al menos una fila de datos');
+                            return;
+                        }
+                        
+                        // Procesar las líneas del CSV (asumiendo formato: nombre,pista,imagen)
+                        const container = document.getElementById('listas-container');
+                        let maxId = 5; // ID actual más alto
+                        
+                        // Obtener IDs existentes para evitar duplicados
+                        const existingInputs = container.querySelectorAll('input[name="lista"]');
+                        existingInputs.forEach(input => {
+                            const id = parseInt(input.value);
+                            if (id > maxId) maxId = id;
+                        });
+                        
+                        for (let i = 1; i < lines.length; i++) { // Saltar header
+                            const parts = lines[i].split(',').map(p => p.trim());
+                            if (parts.length > 0 && parts[0]) {
+                                maxId++;
+                                const nombre = parts[0];
+                                const div = document.createElement('div');
+                                div.className = 'checkbox-item';
+                                div.innerHTML = `
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="lista" value="${maxId}" class="checkbox-input" data-pista="${parts[1] || ''}" data-imagen="${parts[2] || ''}">
+                                        <span>${nombre}</span>
+                                    </label>
+                                `;
+                                container.appendChild(div);
+                            }
+                        }
+                        mostrarNotificacion('Categorías importadas correctamente', 'success');
+                        fileInput.value = ''; // Limpiar el input
+                    } catch (error) {
+                        mostrarNotificacion('Error al leer el archivo: ' + error.message, 'error');
+                    }
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function iniciarPartida() {
+            const listasSeleccionadas = Array.from(document.querySelectorAll('input[name="lista"]:checked'))
+                .map(cb => cb.value);
+            
+            if (listasSeleccionadas.length === 0) {
+                mostrarNotificacion('Por favor, selecciona al menos una categoría para jugar', 'error');
+                return;
+            }
+
+            const config = {
+                jugadores: numJugadores,
+                impostores: numImpostores,
+                listas: listasSeleccionadas,
+                pistas: document.getElementById('pistas').checked
+            };
+
+            // Verificar si hay configuración guardada de una partida anterior
+            const configGuardadaStr = localStorage.getItem('configGuardada');
+            if (configGuardadaStr) {
+                const configGuardada = JSON.parse(configGuardadaStr);
+                // Cargar los nombres guardados (los que existan)
+                if (configGuardada.nombres && configGuardada.nombres.length > 0) {
+                    // Si hay menos nombres guardados que jugadores actuales, usar los que hay
+                    // Si hay más nombres guardados, usar solo los necesarios
+                    config.nombres = configGuardada.nombres.slice(0, numJugadores);
+                }
+            }
+
+            // Guardar configuración en localStorage
+            localStorage.setItem('configPartida', JSON.stringify(config));
+            
+            // Redirigir a la página de nombres
+            window.location.href = 'nombres_jugadores.html';
+        }
+    </script>
+</body>
+</html>

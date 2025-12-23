@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nombres de Jugadores - El Impostor</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <style>
+        .jugadores-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+            justify-content: center;
+        }
+
+        .jugador-card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            width: 160px;
+        }
+
+        .jugador-card h3 {
+            margin: 0;
+            color: #2E7D32;
+            font-size: 0.95rem;
+        }
+
+        .foto-selector {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            border: 3px solid #2E7D32;
+            cursor: pointer;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f0f0f0;
+            transition: transform 0.2s;
+        }
+
+        .foto-selector:hover {
+            transform: scale(1.05);
+        }
+
+        .foto-selector img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .foto-selector.sin-foto {
+            font-size: 2.5rem;
+            color: #999;
+        }
+
+        .nombre-input {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #2E7D32;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            text-align: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .nombre-input:focus {
+            outline: none;
+            border-color: #1B5E20;
+        }
+
+        .fotos-opciones {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            z-index: 1000;
+            width: 90%;
+            max-width: 650px;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .fotos-opciones.activo {
+            display: block;
+        }
+
+        .fotos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            gap: 12px;
+            margin-top: 20px;
+            margin-bottom: 15px;
+        }
+
+        .foto-opcion {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            border: 3px solid #e0e0e0;
+            cursor: pointer;
+            overflow: hidden;
+            transition: all 0.2s;
+            justify-self: center;
+        }
+
+        .foto-opcion:hover {
+            border-color: #2E7D32;
+            transform: scale(1.1);
+        }
+
+        .foto-opcion img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .foto-importar {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            border: 3px dashed #2E7D32;
+            cursor: pointer;
+            background-color: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: #2E7D32;
+            transition: all 0.2s;
+            justify-self: center;
+        }
+
+        .foto-importar:hover {
+            background-color: #e8f5e9;
+            transform: scale(1.1);
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+
+        .modal-overlay.activo {
+            display: block;
+        }
+
+        .fotos-opciones h3 {
+            margin: 0 0 5px 0;
+            color: #2E7D32;
+            text-align: center;
+            font-size: 1.3rem;
+        }
+
+        .btn-cerrar {
+            background-color: #d32f2f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            width: 100%;
+        }
+
+        .btn-cerrar:hover {
+            background-color: #b71c1c;
+        }
+
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loading-overlay.activo {
+            display: flex;
+        }
+
+        .loading-content {
+            background-color: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid #2E7D32;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-content h2 {
+            margin: 0;
+            color: #2E7D32;
+            font-size: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Contenedor de notificaciones -->
+    <div id="notification-container"></div>
+    
+    <button class="button-back" onclick="window.location.href='crear_partida.html'">Volver</button>
+    
+    <div class="menu-container">
+        <h1>Personaliza a los Jugadores</h1>
+        
+        <div class="config-form">
+            <div id="nombres-container" class="jugadores-grid">
+                <!-- Las tarjetas de jugador se generarán dinámicamente -->
+            </div>
+
+            <button class="button" onclick="iniciarJuego()">Comenzar Juego</button>
+        </div>
+    </div>
+
+    <!-- Modal para seleccionar foto -->
+    <div id="modal-overlay" class="modal-overlay" onclick="cerrarModalFoto()"></div>
+    <div id="fotos-modal" class="fotos-opciones">
+        <h3>Selecciona una foto</h3>
+        <input type="file" id="foto-input" accept="image/*" style="display: none;" onchange="importarFotoPersonalizada()">
+        <div id="fotos-grid" class="fotos-grid">
+            <!-- Las fotos se cargarán aquí -->
+        </div>
+        <button class="btn-cerrar" onclick="cerrarModalFoto()">Cerrar</button>
+    </div>
+
+    <!-- Modal de carga -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <h2>¡Iniciando juego!</h2>
+        </div>
+    </div>
+
+    <script>
+        // Obtener configuración del localStorage
+        const config = JSON.parse(localStorage.getItem('configPartida'));
+        
+        if (!config) {
+            window.location.href = 'crear_partida.html';
+        }
+
+        const numJugadores = config.jugadores;
+        const container = document.getElementById('nombres-container');
+        
+        // Array de fotos disponibles
+        const fotosDisponibles = [
+            '../../src/fotos_perfil/1.jpg',
+            '../../src/fotos_perfil/2.png',
+            '../../src/fotos_perfil/3.jpg',
+            '../../src/fotos_perfil/4.jpg',
+            '../../src/fotos_perfil/5.jpg',
+            '../../src/fotos_perfil/6.jpg',
+            '../../src/fotos_perfil/7.jpg',
+            '../../src/fotos_perfil/8.jpg',
+            '../../src/fotos_perfil/9.jpg',
+            '../../src/fotos_perfil/10.jpg',
+            '../../src/fotos_perfil/11.jpg',
+            '../../src/fotos_perfil/12.jpg',
+            '../../src/fotos_perfil/13.jpg',
+            '../../src/fotos_perfil/14.jpg',
+            '../../src/fotos_perfil/15.jpg',
+            '../../src/fotos_perfil/16.jpg',
+            '../../src/fotos_perfil/17.jpg'
+        ];
+
+        let jugadorSeleccionado = null;
+        const jugadoresData = [];
+
+        // Crear tarjetas para cada jugador
+        for (let i = 1; i <= numJugadores; i++) {
+            const nombrePrecargado = config.nombres && config.nombres[i-1] ? (typeof config.nombres[i-1] === 'object' ? config.nombres[i-1].nombre : config.nombres[i-1]) : '';
+            const fotoPrecargada = config.nombres && config.nombres[i-1] && typeof config.nombres[i-1] === 'object' ? config.nombres[i-1].foto : null;
+            
+            jugadoresData.push({
+                nombre: nombrePrecargado,
+                foto: fotoPrecargada
+            });
+
+            const card = document.createElement('div');
+            card.className = 'jugador-card';
+            card.innerHTML = `
+                <h3>Jugador ${i}</h3>
+                <div class="foto-selector ${fotoPrecargada ? '' : 'sin-foto'}" onclick="abrirModalFoto(${i-1})" id="foto-${i-1}">
+                    ${fotoPrecargada ? `<img src="${fotoPrecargada}" alt="Foto jugador ${i}">` : '👤'}
+                </div>
+                <input type="text" id="jugador-${i-1}" class="nombre-input" placeholder="Nombre del jugador ${i}" value="${nombrePrecargado}" autocomplete="off" required>
+            `;
+            container.appendChild(card);
+        }
+
+        function abrirModalFoto(index) {
+            jugadorSeleccionado = index;
+            document.getElementById('modal-overlay').classList.add('activo');
+            document.getElementById('fotos-modal').classList.add('activo');
+            
+            // Cargar fotos disponibles
+            const fotosGrid = document.getElementById('fotos-grid');
+            fotosGrid.innerHTML = '';
+            
+            fotosDisponibles.forEach(foto => {
+                const div = document.createElement('div');
+                div.className = 'foto-opcion';
+                div.innerHTML = `<img src="${foto}" alt="Foto">`;
+                div.onclick = () => seleccionarFoto(foto);
+                fotosGrid.appendChild(div);
+            });
+            
+            // Agregar botón de importar al final
+            const btnImportar = document.createElement('div');
+            btnImportar.className = 'foto-importar';
+            btnImportar.innerHTML = '📷';
+            btnImportar.onclick = () => document.getElementById('foto-input').click();
+            fotosGrid.appendChild(btnImportar);
+        }
+
+        function cerrarModalFoto() {
+            document.getElementById('modal-overlay').classList.remove('activo');
+            document.getElementById('fotos-modal').classList.remove('activo');
+            jugadorSeleccionado = null;
+        }
+
+        function importarFotoPersonalizada() {
+            const input = document.getElementById('foto-input');
+            const file = input.files[0];
+            
+            if (file && jugadorSeleccionado !== null) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const fotoUrl = e.target.result;
+                    seleccionarFoto(fotoUrl);
+                };
+                reader.readAsDataURL(file);
+            }
+            input.value = '';
+        }
+
+        function seleccionarFoto(foto) {
+            if (jugadorSeleccionado !== null) {
+                jugadoresData[jugadorSeleccionado].foto = foto;
+                const fotoSelector = document.getElementById(`foto-${jugadorSeleccionado}`);
+                fotoSelector.innerHTML = `<img src="${foto}" alt="Foto jugador">`;
+                fotoSelector.classList.remove('sin-foto');
+                cerrarModalFoto();
+            }
+        }
+
+        // Función para mostrar notificaciones
+        function mostrarNotificacion(mensaje, tipo = 'error') {
+            const container = document.getElementById('notification-container');
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${tipo}`;
+            notification.textContent = mensaje;
+            
+            container.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 10);
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    container.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        function iniciarJuego() {
+            let todosCompletos = true;
+
+            for (let i = 0; i < numJugadores; i++) {
+                const input = document.getElementById(`jugador-${i}`);
+                const nombre = input.value.trim();
+                
+                if (nombre === '') {
+                    todosCompletos = false;
+                    input.style.borderColor = '#d32f2f';
+                } else {
+                    input.style.borderColor = '#2E7D32';
+                    jugadoresData[i].nombre = nombre;
+                }
+            }
+
+            if (!todosCompletos) {
+                mostrarNotificacion('Por favor, completa todos los nombres', 'error');
+                return;
+            }
+
+            // Guardar nombres y fotos en la configuración
+            config.nombres = jugadoresData;
+            localStorage.setItem('configPartida', JSON.stringify(config));
+
+            console.log('Configuración completa:', config);
+            // Mostrar modal de carga
+            document.getElementById('loading-overlay').classList.add('activo');
+            
+            // Redirigir a la página del juego
+            setTimeout(() => {
+                window.location.href = 'juego_local.html';
+            }, 1500);
+        }
+    </script>
+</body>
+</html>
