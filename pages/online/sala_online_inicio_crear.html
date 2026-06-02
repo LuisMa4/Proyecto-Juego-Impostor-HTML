@@ -391,6 +391,40 @@
             background-color: #1B5E20;
         }
 
+        .bot-actions {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .bot-button {
+            padding: 9px 13px;
+            background-color: #2E7D32;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .bot-button:hover {
+            transform: translateY(-2px);
+            background-color: #1B5E20;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .bot-button.danger {
+            background-color: #d32f2f;
+        }
+
+        .bot-button.danger:hover {
+            background-color: #b71c1c;
+        }
+
         @media (max-width: 860px) {
             .lobby-layout {
                 grid-template-columns: 1fr;
@@ -474,6 +508,11 @@
             <aside class="players-panel">
                 <h2 class="panel-title">Jugadores en sala</h2>
                 <p class="photo-hint">Presiona tu foto para cambiarla.</p>
+                <div class="bot-actions">
+                    <button class="bot-button" type="button" onclick="agregarBot()">Agregar bot</button>
+                    <button class="bot-button" type="button" onclick="llenarConBots()">Llenar con bots</button>
+                    <button class="bot-button danger" type="button" onclick="quitarBots()">Quitar bots</button>
+                </div>
                 <div class="players-list" id="players-list"></div>
             </aside>
         </section>
@@ -539,6 +578,19 @@
             '../../src/fotos_perfil/15.jpg',
             '../../src/fotos_perfil/16.jpg',
             '../../src/fotos_perfil/17.jpg'
+        ];
+
+        const nombresBots = [
+            'Bot Azul',
+            'Bot Rojo',
+            'Bot Verde',
+            'Bot Sombra',
+            'Bot Lima',
+            'Bot Nube',
+            'Bot Eco',
+            'Bot Rayo',
+            'Bot Pixel',
+            'Bot Lupa'
         ];
 
         function obtenerSalas() {
@@ -707,12 +759,81 @@
                                 ? `<button class="editable-name" type="button" onclick="abrirModalNombre()">${escapeHtml(jugador.nombre)} <span class="edit-name-icon">&#9998;</span></button>`
                                 : escapeHtml(jugador.nombre)}
                         </h3>
-                        <p>${jugador.host ? 'Creador de la sala' : 'Jugador conectado'}</p>
+                        <p>${jugador.host ? 'Creador de la sala' : jugador.bot ? 'Bot de prueba' : 'Jugador conectado'}</p>
                     </div>
                     ${jugador.host ? '<span class="host-badge">Anfitrion</span>' : `<button class="kick-button" onclick="botarJugador('${escapeHtml(jugador.id)}')">Botar</button>`}
                 `;
                 container.appendChild(card);
             });
+        }
+
+        function agregarBot() {
+            if (salaActual.participantes.length >= numJugadores) {
+                mostrarNotificacion('La sala ya esta llena');
+                return;
+            }
+
+            const totalBots = salaActual.participantes.filter(jugador => jugador.bot).length;
+            const nombre = nombresBots[totalBots % nombresBots.length];
+            const foto = fotosDisponibles[(totalBots + 2) % fotosDisponibles.length];
+
+            salaActual.participantes.push({
+                id: `bot-${Date.now()}-${totalBots}`,
+                nombre,
+                foto,
+                host: false,
+                bot: true
+            });
+
+            salaActual.jugadores = salaActual.participantes.length;
+            renderizarJugadores();
+            sincronizarSala();
+            mostrarNotificacion('Bot agregado a la sala', 'success');
+        }
+
+        function llenarConBots() {
+            let agregados = 0;
+
+            while (salaActual.participantes.length < numJugadores) {
+                const totalBots = salaActual.participantes.filter(jugador => jugador.bot).length;
+                const nombre = nombresBots[totalBots % nombresBots.length];
+                const foto = fotosDisponibles[(totalBots + 2) % fotosDisponibles.length];
+
+                salaActual.participantes.push({
+                    id: `bot-${Date.now()}-${totalBots}`,
+                    nombre,
+                    foto,
+                    host: false,
+                    bot: true
+                });
+                agregados++;
+            }
+
+            if (agregados === 0) {
+                mostrarNotificacion('La sala ya esta completa', 'info');
+                return;
+            }
+
+            salaActual.jugadores = salaActual.participantes.length;
+            renderizarJugadores();
+            sincronizarSala();
+            mostrarNotificacion(`${agregados} bots agregados`, 'success');
+        }
+
+        function quitarBots() {
+            const antes = salaActual.participantes.length;
+            salaActual.participantes = salaActual.participantes.filter(jugador => !jugador.bot);
+            const eliminados = antes - salaActual.participantes.length;
+
+            if (eliminados === 0) {
+                mostrarNotificacion('No hay bots en la sala', 'info');
+                return;
+            }
+
+            salaActual.jugadores = salaActual.participantes.length;
+            renderizarJugadores();
+            sincronizarSala();
+            mostrarNotificacion('Bots eliminados de la sala', 'success');
         }
 
         function cambiarJugadores(delta) {

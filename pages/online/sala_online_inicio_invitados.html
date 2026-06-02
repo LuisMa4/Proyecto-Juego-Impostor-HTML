@@ -589,9 +589,9 @@
                                 ? `<button class="editable-name" type="button" onclick="abrirModalNombre()">${escapeHtml(jugador.nombre)} <span>&#9998;</span></button>`
                                 : escapeHtml(jugador.nombre)}
                         </h3>
-                        <p>${jugador.host ? 'Creador de la sala' : 'Jugador conectado'}</p>
+                        <p>${jugador.host ? 'Creador de la sala' : jugador.bot ? 'Bot de prueba' : 'Jugador conectado'}</p>
                     </div>
-                    <span class="status-badge">${jugador.host ? 'Anfitrion' : esYo ? 'Tu' : 'Invitado'}</span>
+                    <span class="status-badge">${jugador.host ? 'Anfitrion' : esYo ? 'Tu' : jugador.bot ? 'Bot' : 'Invitado'}</span>
                 `;
                 container.appendChild(card);
             });
