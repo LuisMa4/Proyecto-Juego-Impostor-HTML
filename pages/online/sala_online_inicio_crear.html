@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lobby Online - El Impostor</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <style>
+        body {
+            justify-content: flex-start;
+            padding: 80px 16px 32px;
+        }
+
+        .online-lobby-container {
+            width: 100%;
+            max-width: 1120px;
+            text-align: center;
+        }
+
+        .online-lobby-container h1 {
+            margin-bottom: 18px;
+        }
+
+        .room-summary {
+            display: inline-flex;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 24px;
+            padding: 12px 18px;
+            background-color: white;
+            color: #1B5E20;
+            border-radius: 10px;
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+            font-weight: bold;
+        }
+
+        .lobby-layout {
+            display: grid;
+            grid-template-columns: minmax(320px, 1fr) minmax(320px, 0.9fr);
+            gap: 24px;
+            align-items: start;
+        }
+
+        .players-panel {
+            background-color: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            text-align: left;
+        }
+
+        .panel-title {
+            color: #2E7D32;
+            font-size: 1.45rem;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .players-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .online-player-card {
+            display: grid;
+            grid-template-columns: 58px 1fr auto;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border: 2px solid #e2efd9;
+            border-radius: 12px;
+            background-color: #fbfffa;
+        }
+
+        .player-photo {
+            position: relative;
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            border: 3px solid #2E7D32;
+            overflow: hidden;
+            background-color: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #2E7D32;
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+
+        .player-photo.editable {
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .player-photo.editable:hover {
+            transform: scale(1.06);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+        }
+
+        .edit-photo-badge {
+            position: absolute;
+            right: -4px;
+            bottom: -4px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: #2E7D32;
+            color: white;
+            border: 2px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            line-height: 1;
+        }
+
+        .player-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .player-info h3 {
+            color: #2E7D32;
+            font-size: 1.05rem;
+            margin-bottom: 4px;
+        }
+
+        .editable-name {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: none;
+            background: transparent;
+            color: #2E7D32;
+            cursor: pointer;
+            font: inherit;
+            font-weight: bold;
+            padding: 0;
+            text-align: left;
+        }
+
+        .editable-name:hover {
+            color: #1B5E20;
+        }
+
+        .edit-name-icon {
+            font-size: 0.85rem;
+        }
+
+        .player-info p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .kick-button {
+            padding: 9px 12px;
+            background-color: #d32f2f;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .kick-button:hover {
+            transform: translateY(-2px);
+            background-color: #b71c1c;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+        }
+
+        .host-badge {
+            padding: 8px 10px;
+            border-radius: 8px;
+            background-color: #e8f5e9;
+            color: #1B5E20;
+            font-size: 0.85rem;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .empty-message {
+            padding: 16px;
+            color: #666;
+            text-align: center;
+            border: 2px dashed #d7e7cf;
+            border-radius: 12px;
+        }
+
+        .lobby-actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 18px;
+        }
+
+        .lobby-actions .button,
+        .lobby-actions .button-small {
+            margin: 0;
+            width: auto;
+            min-width: 170px;
+        }
+
+        .photo-hint {
+            color: #666;
+            font-size: 0.9rem;
+            margin: -6px 0 14px;
+            text-align: center;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        .modal-overlay.activo {
+            display: block;
+        }
+
+        .fotos-opciones {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            z-index: 1000;
+            width: 90%;
+            max-width: 650px;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .fotos-opciones.activo {
+            display: block;
+        }
+
+        .fotos-opciones h3 {
+            margin: 0 0 5px;
+            color: #2E7D32;
+            text-align: center;
+            font-size: 1.3rem;
+        }
+
+        .fotos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            gap: 12px;
+            margin: 20px 0 15px;
+        }
+
+        .foto-opcion,
+        .foto-importar {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            cursor: pointer;
+            justify-self: center;
+            transition: all 0.2s;
+        }
+
+        .foto-opcion {
+            border: 3px solid #e0e0e0;
+            overflow: hidden;
+        }
+
+        .foto-opcion:hover {
+            border-color: #2E7D32;
+            transform: scale(1.1);
+        }
+
+        .foto-opcion img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .foto-importar {
+            border: 3px dashed #2E7D32;
+            background-color: #f5f5f5;
+            color: #2E7D32;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .foto-importar:hover {
+            background-color: #e8f5e9;
+            transform: scale(1.1);
+        }
+
+        .btn-cerrar {
+            background-color: #d32f2f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            width: 100%;
+        }
+
+        .btn-cerrar:hover {
+            background-color: #b71c1c;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 22px;
+        }
+
+        .modal-button {
+            padding: 10px 18px;
+            background-color: #2E7D32;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+            background-color: #1B5E20;
+        }
+
+        .modal-button.secondary {
+            background-color: #777;
+        }
+
+        .modal-button.secondary:hover {
+            background-color: #555;
+        }
+
+        .category-alerts {
+            display: grid;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .category-alert {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border: 2px solid #cde8c8;
+            border-radius: 10px;
+            background-color: #f3fbf1;
+            color: #333;
+        }
+
+        .category-alert strong {
+            color: #2E7D32;
+        }
+
+        .category-alert button {
+            padding: 8px 12px;
+            background-color: #2E7D32;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .category-alert button:hover {
+            background-color: #1B5E20;
+        }
+
+        @media (max-width: 860px) {
+            .lobby-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 560px) {
+            .online-player-card {
+                grid-template-columns: 52px 1fr;
+            }
+
+            .online-player-card .kick-button,
+            .online-player-card .host-badge {
+                grid-column: 1 / -1;
+                width: 100%;
+            }
+
+            .lobby-actions .button,
+            .lobby-actions .button-small {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="notification-container"></div>
+
+    <button class="button-back" onclick="window.location.href='crear_sala.html'">Volver</button>
+
+    <main class="online-lobby-container">
+        <h1 id="page-title">Sala Online</h1>
+        <div class="room-summary" id="room-summary"></div>
+
+        <section class="lobby-layout">
+            <div class="config-form">
+                <h2 class="panel-title">Configurar partida</h2>
+                <div class="category-alerts" id="category-alerts"></div>
+
+                <div class="form-group">
+                    <label for="num-jugadores">Numero maximo de jugadores:</label>
+                    <div class="number-input">
+                        <button type="button" class="btn-number" onclick="cambiarJugadores(-1)">-</button>
+                        <input type="number" id="num-jugadores" value="3" min="3" readonly>
+                        <button type="button" class="btn-number" onclick="cambiarJugadores(1)">+</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="num-impostores">Numero de impostores:</label>
+                    <div class="number-input">
+                        <button type="button" class="btn-number" onclick="cambiarImpostores(-1)">-</button>
+                        <input type="number" id="num-impostores" value="1" min="0" readonly>
+                        <button type="button" class="btn-number" onclick="cambiarImpostores(1)">+</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Categorias:</label>
+                    <div class="checkbox-group" id="listas-container"></div>
+                    <div class="checkbox-group" style="margin-top: 0; padding: 0; border-radius: 0 0 8px 8px;">
+                        <input type="file" id="file-input" accept=".csv" style="display: none;" onchange="importarCategoria()">
+                        <button class="import-button" onclick="document.getElementById('file-input').click()">
+                            Importar categoria
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="pistas" class="checkbox-input">
+                        <span>Activar pistas</span>
+                    </label>
+                    <p class="hint-text">Se indicara la categoria, no arruinara la experiencia de juego</p>
+                </div>
+
+                <div class="lobby-actions">
+                    <button class="button" onclick="iniciarPartida()">Iniciar Partida</button>
+                </div>
+            </div>
+
+            <aside class="players-panel">
+                <h2 class="panel-title">Jugadores en sala</h2>
+                <p class="photo-hint">Presiona tu foto para cambiarla.</p>
+                <div class="players-list" id="players-list"></div>
+            </aside>
+        </section>
+    </main>
+
+    <div id="modal-overlay" class="modal-overlay" onclick="cerrarModalFoto()"></div>
+    <div id="fotos-modal" class="fotos-opciones">
+        <h3>Selecciona una foto</h3>
+        <input type="file" id="foto-input" accept="image/*" style="display: none;" onchange="importarFotoPersonalizada()">
+        <div id="fotos-grid" class="fotos-grid"></div>
+        <button class="btn-cerrar" onclick="cerrarModalFoto()">Cerrar</button>
+    </div>
+
+    <div class="modal" id="name-modal">
+        <div class="modal-content">
+            <span class="close" onclick="cerrarModalNombre()">&times;</span>
+            <h2>Cambiar nombre</h2>
+
+            <div class="form-group compact">
+                <label for="host-name-input">Nombre del anfitrion</label>
+                <input class="text-input" id="host-name-input" type="text" maxlength="24" placeholder="Tu nombre" autocomplete="off">
+            </div>
+
+            <div class="modal-actions">
+                <button class="modal-button secondary" type="button" onclick="cerrarModalNombre()">Cancelar</button>
+                <button class="modal-button" type="button" onclick="guardarNombreAnfitrion()">Guardar nombre</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'salasOnlineImpostor';
+        const params = new URLSearchParams(window.location.search);
+        const salaId = params.get('sala');
+
+        let numJugadores = 3;
+        let numImpostores = 1;
+        let salaActual = null;
+        let jugadorFotoSeleccionado = null;
+
+        const categoriasDefault = [
+            { id: 1, nombre: 'Cosas cotidianas', archivo: '../../data/categorias/cosas_cotidianas.csv' },
+            { id: 2, nombre: 'Personajes famosos', archivo: '../../data/categorias/famosos.csv' },
+            { id: 3, nombre: 'Futbolistas', archivo: '../../data/categorias/futbolistas.csv' },
+            { id: 4, nombre: 'Peliculas', archivo: '../../data/categorias/peliculas.csv' }
+        ];
+
+        const fotosDisponibles = [
+            '../../src/fotos_perfil/1.jpg',
+            '../../src/fotos_perfil/2.png',
+            '../../src/fotos_perfil/3.jpg',
+            '../../src/fotos_perfil/4.jpg',
+            '../../src/fotos_perfil/5.jpg',
+            '../../src/fotos_perfil/6.jpg',
+            '../../src/fotos_perfil/7.jpg',
+            '../../src/fotos_perfil/8.jpg',
+            '../../src/fotos_perfil/9.jpg',
+            '../../src/fotos_perfil/10.jpg',
+            '../../src/fotos_perfil/11.jpg',
+            '../../src/fotos_perfil/12.jpg',
+            '../../src/fotos_perfil/13.jpg',
+            '../../src/fotos_perfil/14.jpg',
+            '../../src/fotos_perfil/15.jpg',
+            '../../src/fotos_perfil/16.jpg',
+            '../../src/fotos_perfil/17.jpg'
+        ];
+
+        function obtenerSalas() {
+            return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        }
+
+        function guardarSalas(salas) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(salas));
+        }
+
+        function obtenerSalaActual() {
+            const salas = obtenerSalas();
+            return salas.find(sala => sala.id === salaId) || JSON.parse(localStorage.getItem('salaOnlineActual') || 'null');
+        }
+
+        function mostrarNotificacion(mensaje, tipo = 'error') {
+            const container = document.getElementById('notification-container');
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${tipo}`;
+            notification.textContent = mensaje;
+            container.appendChild(notification);
+
+            setTimeout(() => notification.classList.add('show'), 10);
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        function prepararSala() {
+            salaActual = obtenerSalaActual();
+
+            if (!salaActual) {
+                document.querySelector('.online-lobby-container').innerHTML = `
+                    <div class="config-form">
+                        <h2 class="panel-title">Sala no encontrada</h2>
+                        <p class="empty-message">Crea una sala nueva para configurar la partida online.</p>
+                        <button class="button" onclick="window.location.href='crear_sala.html'">Ver salas</button>
+                    </div>
+                `;
+                return;
+            }
+
+            if (!Array.isArray(salaActual.participantes)) {
+                salaActual.participantes = crearParticipantesIniciales();
+            }
+
+            if (!salaActual.config) {
+                salaActual.config = {
+                    jugadores: Math.max(3, salaActual.maxJugadores || 10),
+                    impostores: 1,
+                    listas: [],
+                    pistas: false,
+                    categoriasPersonalizadas: []
+                };
+            }
+
+            if (!Array.isArray(salaActual.config.categoriasPersonalizadas)) {
+                salaActual.config.categoriasPersonalizadas = [];
+            }
+
+            if (!Array.isArray(salaActual.solicitudesCategorias)) {
+                salaActual.solicitudesCategorias = [];
+            }
+
+            numJugadores = salaActual.config.jugadores;
+            numImpostores = salaActual.config.impostores;
+
+            document.getElementById('page-title').textContent = salaActual.nombre;
+            document.getElementById('room-summary').innerHTML = `
+                <span>Codigo: ${escapeHtml(salaActual.id)}</span>
+                <span>${salaActual.password ? 'Sala privada' : 'Sala publica'}</span>
+                <span id="players-count"></span>
+            `;
+
+            cargarCategorias();
+            restaurarConfiguracion();
+            renderizarJugadores();
+            renderizarAlertasCategorias();
+            sincronizarSala();
+        }
+
+        function crearParticipantesIniciales() {
+            return [
+                {
+                    id: 'host',
+                    nombre: 'Anfitrion',
+                    foto: '../../src/fotos_perfil/1.jpg',
+                    host: true
+                }
+            ];
+        }
+
+        function cargarCategorias() {
+            const container = document.getElementById('listas-container');
+            container.innerHTML = '';
+
+            categoriasDefault.forEach(categoria => {
+                const div = document.createElement('div');
+                div.className = 'checkbox-item';
+                div.innerHTML = `
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="lista" value="${categoria.id}" class="checkbox-input" data-archivo="${categoria.archivo}">
+                        <span>${categoria.nombre}</span>
+                    </label>
+                `;
+                container.appendChild(div);
+            });
+
+            salaActual.config.categoriasPersonalizadas.forEach(categoria => {
+                agregarCategoriaAlListado(categoria.id, categoria.nombre, true);
+            });
+        }
+
+        function agregarCategoriaAlListado(id, nombre, marcada = false) {
+            const container = document.getElementById('listas-container');
+            const div = document.createElement('div');
+            div.className = 'checkbox-item';
+            div.innerHTML = `
+                <label class="checkbox-label">
+                    <input type="checkbox" name="lista" value="${escapeHtml(id)}" class="checkbox-input" ${marcada ? 'checked' : ''}>
+                    <span>${escapeHtml(nombre)}</span>
+                </label>
+            `;
+            container.appendChild(div);
+        }
+
+        function restaurarConfiguracion() {
+            document.getElementById('num-jugadores').value = numJugadores;
+            document.getElementById('num-impostores').value = numImpostores;
+            document.getElementById('pistas').checked = Boolean(salaActual.config.pistas);
+
+            if (salaActual.config.listas && salaActual.config.listas.length > 0) {
+                salaActual.config.listas.forEach(listaId => {
+                    const checkbox = document.querySelector(`input[name="lista"][value="${listaId}"]`);
+                    if (checkbox) {
+                        checkbox.checked = true;
+                    }
+                });
+            }
+        }
+
+        function renderizarJugadores() {
+            const container = document.getElementById('players-list');
+            const participantes = salaActual.participantes || [];
+            container.innerHTML = '';
+
+            document.getElementById('players-count').textContent = `${participantes.length}/${numJugadores} jugadores`;
+
+            if (participantes.length === 0) {
+                container.innerHTML = '<p class="empty-message">Esperando jugadores...</p>';
+                return;
+            }
+
+            participantes.forEach(jugador => {
+                const card = document.createElement('article');
+                card.className = 'online-player-card';
+                card.innerHTML = `
+                    <div class="player-photo ${jugador.host ? 'editable' : ''}" ${jugador.host ? `onclick="abrirModalFoto('${escapeHtml(jugador.id)}')"` : ''}>
+                        ${jugador.foto ? `<img src="${escapeHtml(jugador.foto)}" alt="Foto de ${escapeHtml(jugador.nombre)}">` : escapeHtml(jugador.nombre.charAt(0).toUpperCase())}
+                        ${jugador.host ? '<span class="edit-photo-badge" title="Cambiar foto">&#9998;</span>' : ''}
+                    </div>
+                    <div class="player-info">
+                        <h3>
+                            ${jugador.host
+                                ? `<button class="editable-name" type="button" onclick="abrirModalNombre()">${escapeHtml(jugador.nombre)} <span class="edit-name-icon">&#9998;</span></button>`
+                                : escapeHtml(jugador.nombre)}
+                        </h3>
+                        <p>${jugador.host ? 'Creador de la sala' : 'Jugador conectado'}</p>
+                    </div>
+                    ${jugador.host ? '<span class="host-badge">Anfitrion</span>' : `<button class="kick-button" onclick="botarJugador('${escapeHtml(jugador.id)}')">Botar</button>`}
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function cambiarJugadores(delta) {
+            const nuevoValor = numJugadores + delta;
+            const minJugadores = Math.max(3, salaActual.participantes.length);
+
+            if (nuevoValor >= minJugadores) {
+                numJugadores = nuevoValor;
+                document.getElementById('num-jugadores').value = numJugadores;
+
+                if (numImpostores >= numJugadores) {
+                    numImpostores = numJugadores - 1;
+                    document.getElementById('num-impostores').value = numImpostores;
+                }
+
+                renderizarJugadores();
+                guardarConfiguracionSala();
+            }
+        }
+
+        function cambiarImpostores(delta) {
+            const nuevoValor = numImpostores + delta;
+            if (nuevoValor >= 0 && nuevoValor < numJugadores) {
+                numImpostores = nuevoValor;
+                document.getElementById('num-impostores').value = numImpostores;
+                guardarConfiguracionSala();
+            }
+        }
+
+        function importarCategoria() {
+            const fileInput = document.getElementById('file-input');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const csvContent = e.target.result;
+                    const lines = csvContent.split('\n').filter(line => line.trim() !== '');
+
+                    if (lines.length < 2) {
+                        mostrarNotificacion('El archivo CSV debe tener al menos una fila de datos');
+                        return;
+                    }
+
+                    const container = document.getElementById('listas-container');
+                    let maxId = 5;
+                    container.querySelectorAll('input[name="lista"]').forEach(input => {
+                        const id = parseInt(input.value, 10);
+                        if (id > maxId) {
+                            maxId = id;
+                        }
+                    });
+
+                    for (let i = 1; i < lines.length; i++) {
+                        const parts = lines[i].split(',').map(p => p.trim());
+                        if (parts[0]) {
+                            maxId++;
+                            const categoria = {
+                                id: `custom-${Date.now()}-${maxId}`,
+                                nombre: parts[0],
+                                origen: 'Anfitrion'
+                            };
+                            salaActual.config.categoriasPersonalizadas.push(categoria);
+                            agregarCategoriaAlListado(categoria.id, categoria.nombre, true);
+                        }
+                    }
+
+                    mostrarNotificacion('Categorias importadas correctamente', 'success');
+                    guardarConfiguracionSala();
+                    fileInput.value = '';
+                } catch (error) {
+                    mostrarNotificacion('Error al leer el archivo: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function botarJugador(id) {
+            salaActual.participantes = salaActual.participantes.filter(jugador => jugador.id !== id || jugador.host);
+            mostrarNotificacion('Jugador expulsado de la sala', 'info');
+            renderizarJugadores();
+            sincronizarSala();
+        }
+
+        function guardarConfiguracionSala(mostrarMensaje = false) {
+            const listasSeleccionadas = Array.from(document.querySelectorAll('input[name="lista"]:checked'))
+                .map(cb => cb.value);
+
+            salaActual.config = {
+                jugadores: numJugadores,
+                impostores: numImpostores,
+                listas: listasSeleccionadas,
+                pistas: document.getElementById('pistas').checked,
+                categoriasPersonalizadas: salaActual.config.categoriasPersonalizadas || []
+            };
+            salaActual.maxJugadores = numJugadores;
+            salaActual.jugadores = salaActual.participantes.length;
+            sincronizarSala();
+
+            if (mostrarMensaje) {
+                mostrarNotificacion('Configuracion guardada', 'success');
+            }
+        }
+
+        function iniciarPartida() {
+            const listasSeleccionadas = Array.from(document.querySelectorAll('input[name="lista"]:checked'))
+                .map(cb => cb.value);
+
+            if (listasSeleccionadas.length === 0) {
+                mostrarNotificacion('Selecciona al menos una categoria para jugar');
+                return;
+            }
+
+            if (salaActual.participantes.length < 3) {
+                mostrarNotificacion('Se necesitan al menos 3 jugadores en la sala');
+                return;
+            }
+
+            guardarConfiguracionSala();
+            localStorage.setItem('configPartidaOnline', JSON.stringify({
+                sala: salaActual,
+                jugadores: salaActual.participantes,
+                configuracion: salaActual.config
+            }));
+            mostrarNotificacion('Partida online lista para iniciar', 'success');
+            setTimeout(() => {
+                window.location.href = 'cartas_online.html';
+            }, 700);
+        }
+
+        function abrirModalFoto(idJugador) {
+            jugadorFotoSeleccionado = idJugador;
+            document.getElementById('modal-overlay').classList.add('activo');
+            document.getElementById('fotos-modal').classList.add('activo');
+
+            const fotosGrid = document.getElementById('fotos-grid');
+            fotosGrid.innerHTML = '';
+
+            fotosDisponibles.forEach(foto => {
+                const div = document.createElement('div');
+                div.className = 'foto-opcion';
+                div.innerHTML = `<img src="${foto}" alt="Foto">`;
+                div.onclick = () => seleccionarFoto(foto);
+                fotosGrid.appendChild(div);
+            });
+
+            const btnImportar = document.createElement('div');
+            btnImportar.className = 'foto-importar';
+            btnImportar.textContent = 'Subir foto';
+            btnImportar.onclick = () => document.getElementById('foto-input').click();
+            fotosGrid.appendChild(btnImportar);
+        }
+
+        function cerrarModalFoto() {
+            document.getElementById('modal-overlay').classList.remove('activo');
+            document.getElementById('fotos-modal').classList.remove('activo');
+            jugadorFotoSeleccionado = null;
+        }
+
+        function importarFotoPersonalizada() {
+            const input = document.getElementById('foto-input');
+            const file = input.files[0];
+
+            if (file && jugadorFotoSeleccionado !== null) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    seleccionarFoto(e.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+
+            input.value = '';
+        }
+
+        function seleccionarFoto(foto) {
+            const jugador = salaActual.participantes.find(participante => participante.id === jugadorFotoSeleccionado);
+
+            if (!jugador) {
+                return;
+            }
+
+            jugador.foto = foto;
+            renderizarJugadores();
+            sincronizarSala();
+            cerrarModalFoto();
+            mostrarNotificacion('Foto actualizada', 'success');
+        }
+
+        function abrirModalNombre() {
+            const anfitrion = salaActual.participantes.find(jugador => jugador.host);
+            if (!anfitrion) {
+                return;
+            }
+
+            document.getElementById('host-name-input').value = anfitrion.nombre;
+            document.getElementById('name-modal').style.display = 'block';
+            setTimeout(() => document.getElementById('host-name-input').focus(), 50);
+        }
+
+        function cerrarModalNombre() {
+            document.getElementById('name-modal').style.display = 'none';
+        }
+
+        function guardarNombreAnfitrion() {
+            const nuevoNombre = document.getElementById('host-name-input').value.trim();
+            const anfitrion = salaActual.participantes.find(jugador => jugador.host);
+
+            if (!nuevoNombre) {
+                mostrarNotificacion('Escribe un nombre para el anfitrion');
+                return;
+            }
+
+            if (!anfitrion) {
+                cerrarModalNombre();
+                return;
+            }
+
+            anfitrion.nombre = nuevoNombre;
+            renderizarJugadores();
+            sincronizarSala();
+            cerrarModalNombre();
+            mostrarNotificacion('Nombre actualizado', 'success');
+        }
+
+        function sincronizarSala() {
+            const salas = obtenerSalas();
+            const index = salas.findIndex(sala => sala.id === salaActual.id);
+
+            if (index >= 0) {
+                salas[index] = salaActual;
+            } else {
+                salas.unshift(salaActual);
+            }
+
+            guardarSalas(salas);
+            localStorage.setItem('salaOnlineActual', JSON.stringify(salaActual));
+        }
+
+        function renderizarAlertasCategorias() {
+            const container = document.getElementById('category-alerts');
+            const solicitudes = salaActual.solicitudesCategorias || [];
+            container.innerHTML = '';
+
+            solicitudes.forEach(solicitud => {
+                const alert = document.createElement('div');
+                alert.className = 'category-alert';
+                alert.innerHTML = `
+                    <div>
+                        <strong>${escapeHtml(solicitud.jugadorNombre)}</strong> subio la categoria <strong>${escapeHtml(solicitud.nombre)}</strong>.
+                    </div>
+                    <button type="button" onclick="aceptarCategoriaSolicitada('${escapeHtml(solicitud.id)}')">Agregar</button>
+                `;
+                container.appendChild(alert);
+            });
+        }
+
+        function aceptarCategoriaSolicitada(id) {
+            const solicitud = (salaActual.solicitudesCategorias || []).find(item => item.id === id);
+
+            if (!solicitud) {
+                return;
+            }
+
+            salaActual.config.categoriasPersonalizadas.push({
+                id: solicitud.id,
+                nombre: solicitud.nombre,
+                origen: solicitud.jugadorNombre
+            });
+            salaActual.solicitudesCategorias = salaActual.solicitudesCategorias.filter(item => item.id !== id);
+            agregarCategoriaAlListado(solicitud.id, solicitud.nombre, true);
+            renderizarAlertasCategorias();
+            guardarConfiguracionSala();
+            mostrarNotificacion('Categoria agregada a la partida', 'success');
+        }
+
+        function actualizarParticipantesDesdeStorage() {
+            if (!salaActual) {
+                return;
+            }
+
+            const salaGuardada = obtenerSalas().find(sala => sala.id === salaActual.id);
+            if (!salaGuardada || !Array.isArray(salaGuardada.participantes)) {
+                return;
+            }
+
+            const participantesActuales = JSON.stringify(salaActual.participantes || []);
+            const participantesGuardados = JSON.stringify(salaGuardada.participantes);
+
+            if (participantesActuales !== participantesGuardados) {
+                salaActual.participantes = salaGuardada.participantes;
+                salaActual.jugadores = salaGuardada.participantes.length;
+                renderizarJugadores();
+            }
+
+            const solicitudesActuales = JSON.stringify(salaActual.solicitudesCategorias || []);
+            const solicitudesGuardadas = JSON.stringify(salaGuardada.solicitudesCategorias || []);
+
+            if (solicitudesActuales !== solicitudesGuardadas) {
+                salaActual.solicitudesCategorias = salaGuardada.solicitudesCategorias || [];
+                renderizarAlertasCategorias();
+
+                if (salaActual.solicitudesCategorias.length > 0) {
+                    mostrarNotificacion('Un invitado subio una categoria CSV', 'info');
+                }
+            }
+        }
+
+        function escapeHtml(texto) {
+            const div = document.createElement('div');
+            div.textContent = texto;
+            return div.innerHTML;
+        }
+
+        document.getElementById('host-name-input').addEventListener('keydown', event => {
+            if (event.key === 'Enter') {
+                guardarNombreAnfitrion();
+            }
+        });
+
+        window.addEventListener('click', event => {
+            if (event.target.id === 'name-modal') {
+                cerrarModalNombre();
+            }
+        });
+
+        document.addEventListener('change', event => {
+            if (event.target.matches('input[name="lista"]') || event.target.id === 'pistas') {
+                guardarConfiguracionSala();
+            }
+        });
+
+        prepararSala();
+        setInterval(actualizarParticipantesDesdeStorage, 1200);
+    </script>
+</body>
+</html>

@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lobby Invitado - El Impostor</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <style>
+        body {
+            justify-content: flex-start;
+            padding: 80px 16px 32px;
+        }
+
+        .guest-lobby-container {
+            width: 100%;
+            max-width: 760px;
+            text-align: center;
+        }
+
+        .guest-lobby-container h1 {
+            margin-bottom: 18px;
+        }
+
+        .room-summary,
+        .players-panel {
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .room-summary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 24px;
+            padding: 12px 18px;
+            color: #1B5E20;
+            font-weight: bold;
+        }
+
+        .players-panel {
+            padding: 25px;
+            text-align: left;
+        }
+
+        .guest-layout {
+            display: grid;
+            gap: 22px;
+        }
+
+        .panel-title {
+            color: #2E7D32;
+            font-size: 1.45rem;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .photo-hint {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .players-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .config-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .config-item {
+            padding: 12px;
+            border: 2px solid #e2efd9;
+            border-radius: 10px;
+            background-color: #fbfffa;
+            text-align: center;
+        }
+
+        .config-item strong {
+            display: block;
+            color: #2E7D32;
+            font-size: 1.25rem;
+            margin-bottom: 4px;
+        }
+
+        .category-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 14px;
+            justify-content: center;
+        }
+
+        .category-chip {
+            padding: 8px 10px;
+            border-radius: 8px;
+            background-color: #e8f5e9;
+            color: #1B5E20;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .upload-row {
+            display: flex;
+            justify-content: center;
+            margin-top: 18px;
+        }
+
+        .upload-row .button-small {
+            margin: 0;
+            width: auto;
+            min-width: 190px;
+        }
+
+        .online-player-card {
+            display: grid;
+            grid-template-columns: 58px 1fr auto;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border: 2px solid #e2efd9;
+            border-radius: 12px;
+            background-color: #fbfffa;
+        }
+
+        .player-photo {
+            position: relative;
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            border: 3px solid #2E7D32;
+            overflow: hidden;
+            background-color: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #2E7D32;
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+
+        .player-photo.editable {
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .player-photo.editable:hover {
+            transform: scale(1.06);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+        }
+
+        .player-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .edit-photo-badge {
+            position: absolute;
+            right: -4px;
+            bottom: -4px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: #2E7D32;
+            color: white;
+            border: 2px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            line-height: 1;
+        }
+
+        .player-info h3 {
+            color: #2E7D32;
+            font-size: 1.05rem;
+            margin-bottom: 4px;
+        }
+
+        .player-info p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .editable-name {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: none;
+            background: transparent;
+            color: #2E7D32;
+            cursor: pointer;
+            font: inherit;
+            font-weight: bold;
+            padding: 0;
+            text-align: left;
+        }
+
+        .editable-name:hover {
+            color: #1B5E20;
+        }
+
+        .status-badge {
+            padding: 8px 10px;
+            border-radius: 8px;
+            background-color: #e8f5e9;
+            color: #1B5E20;
+            font-size: 0.85rem;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        .modal-overlay.activo {
+            display: block;
+        }
+
+        .fotos-opciones {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            z-index: 1000;
+            width: 90%;
+            max-width: 650px;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .fotos-opciones.activo {
+            display: block;
+        }
+
+        .fotos-opciones h3 {
+            margin: 0 0 5px;
+            color: #2E7D32;
+            text-align: center;
+            font-size: 1.3rem;
+        }
+
+        .fotos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            gap: 12px;
+            margin: 20px 0 15px;
+        }
+
+        .foto-opcion,
+        .foto-importar {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            cursor: pointer;
+            justify-self: center;
+            transition: all 0.2s;
+        }
+
+        .foto-opcion {
+            border: 3px solid #e0e0e0;
+            overflow: hidden;
+        }
+
+        .foto-opcion:hover {
+            border-color: #2E7D32;
+            transform: scale(1.1);
+        }
+
+        .foto-opcion img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .foto-importar {
+            border: 3px dashed #2E7D32;
+            background-color: #f5f5f5;
+            color: #2E7D32;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .foto-importar:hover {
+            background-color: #e8f5e9;
+            transform: scale(1.1);
+        }
+
+        .btn-cerrar {
+            background-color: #d32f2f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            width: 100%;
+        }
+
+        .btn-cerrar:hover {
+            background-color: #b71c1c;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 22px;
+        }
+
+        .modal-button {
+            padding: 10px 18px;
+            background-color: #2E7D32;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+            background-color: #1B5E20;
+        }
+
+        .modal-button.secondary {
+            background-color: #777;
+        }
+
+        .modal-button.secondary:hover {
+            background-color: #555;
+        }
+
+        @media (max-width: 560px) {
+            .online-player-card {
+                grid-template-columns: 52px 1fr;
+            }
+
+            .status-badge {
+                grid-column: 1 / -1;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="notification-container"></div>
+
+    <button class="button-back" onclick="salirSala()">Volver</button>
+
+    <main class="guest-lobby-container">
+        <h1 id="page-title">Sala Online</h1>
+        <div class="room-summary" id="room-summary"></div>
+
+        <div class="guest-layout">
+            <section class="players-panel">
+                <h2 class="panel-title">Configuracion de la partida</h2>
+                <p class="photo-hint">Se actualiza cuando el anfitrion modifica la partida.</p>
+                <div class="config-summary" id="config-summary"></div>
+                <div class="category-list" id="category-list"></div>
+                <div class="upload-row">
+                    <input type="file" id="category-file-input" accept=".csv" style="display: none;" onchange="subirCategoriaCsv()">
+                    <button class="button-small" onclick="document.getElementById('category-file-input').click()">Subir Categorías</button>
+                </div>
+            </section>
+
+            <section class="players-panel">
+                <h2 class="panel-title">Jugadores en sala</h2>
+                <p class="photo-hint">Presiona tu foto o nombre para editarlos.</p>
+                <div class="players-list" id="players-list"></div>
+            </section>
+        </div>
+    </main>
+
+    <div id="modal-overlay" class="modal-overlay" onclick="cerrarModalFoto()"></div>
+    <div id="fotos-modal" class="fotos-opciones">
+        <h3>Selecciona una foto</h3>
+        <input type="file" id="foto-input" accept="image/*" style="display: none;" onchange="importarFotoPersonalizada()">
+        <div id="fotos-grid" class="fotos-grid"></div>
+        <button class="btn-cerrar" onclick="cerrarModalFoto()">Cerrar</button>
+    </div>
+
+    <div class="modal" id="name-modal">
+        <div class="modal-content">
+            <span class="close" onclick="cerrarModalNombre()">&times;</span>
+            <h2>Cambiar nombre</h2>
+
+            <div class="form-group compact">
+                <label for="guest-name-input">Tu nombre</label>
+                <input class="text-input" id="guest-name-input" type="text" maxlength="24" placeholder="Tu nombre" autocomplete="off">
+            </div>
+
+            <div class="modal-actions">
+                <button class="modal-button secondary" type="button" onclick="cerrarModalNombre()">Cancelar</button>
+                <button class="modal-button" type="button" onclick="guardarNombreInvitado()">Guardar nombre</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'salasOnlineImpostor';
+        const params = new URLSearchParams(window.location.search);
+        const salaId = params.get('sala');
+        const jugadorId = params.get('jugador') || localStorage.getItem('jugadorOnlineInvitadoId');
+
+        let salaActual = null;
+
+        const fotosDisponibles = [
+            '../../src/fotos_perfil/1.jpg',
+            '../../src/fotos_perfil/2.png',
+            '../../src/fotos_perfil/3.jpg',
+            '../../src/fotos_perfil/4.jpg',
+            '../../src/fotos_perfil/5.jpg',
+            '../../src/fotos_perfil/6.jpg',
+            '../../src/fotos_perfil/7.jpg',
+            '../../src/fotos_perfil/8.jpg',
+            '../../src/fotos_perfil/9.jpg',
+            '../../src/fotos_perfil/10.jpg',
+            '../../src/fotos_perfil/11.jpg',
+            '../../src/fotos_perfil/12.jpg',
+            '../../src/fotos_perfil/13.jpg',
+            '../../src/fotos_perfil/14.jpg',
+            '../../src/fotos_perfil/15.jpg',
+            '../../src/fotos_perfil/16.jpg',
+            '../../src/fotos_perfil/17.jpg'
+        ];
+
+        function obtenerSalas() {
+            return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        }
+
+        function guardarSalas(salas) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(salas));
+        }
+
+        function mostrarNotificacion(mensaje, tipo = 'error') {
+            const container = document.getElementById('notification-container');
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${tipo}`;
+            notification.textContent = mensaje;
+            container.appendChild(notification);
+
+            setTimeout(() => notification.classList.add('show'), 10);
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        function prepararSala() {
+            const salas = obtenerSalas();
+            salaActual = salas.find(sala => sala.id === salaId);
+
+            if (!salaActual || !jugadorId) {
+                document.querySelector('.guest-lobby-container').innerHTML = `
+                    <div class="players-panel">
+                        <h2 class="panel-title">Sala no encontrada</h2>
+                        <p class="photo-hint">Vuelve a la lista de salas para unirte nuevamente.</p>
+                        <button class="button" onclick="window.location.href='crear_sala.html'">Ver salas</button>
+                    </div>
+                `;
+                return;
+            }
+
+            if (!Array.isArray(salaActual.participantes)) {
+                salaActual.participantes = [];
+            }
+
+            const invitado = salaActual.participantes.find(jugador => jugador.id === jugadorId);
+            if (!invitado) {
+                salaActual.participantes.push({
+                    id: jugadorId,
+                    nombre: 'Invitado',
+                    foto: '../../src/fotos_perfil/2.png',
+                    host: false
+                });
+            }
+
+            salaActual.jugadores = salaActual.participantes.length;
+            sincronizarSala();
+            renderizarSala();
+        }
+
+        function renderizarSala() {
+            document.getElementById('page-title').textContent = salaActual.nombre;
+            document.getElementById('room-summary').innerHTML = `
+                <span>Codigo: ${escapeHtml(salaActual.id)}</span>
+                <span>${salaActual.password ? 'Sala privada' : 'Sala publica'}</span>
+                <span>${salaActual.participantes.length}/${salaActual.maxJugadores || salaActual.config?.jugadores || 8} jugadores</span>
+            `;
+            renderizarConfiguracion();
+            renderizarJugadores();
+        }
+
+        function renderizarConfiguracion() {
+            const config = salaActual.config || {};
+            const categorias = obtenerCategoriasVisibles(config);
+            const resumen = document.getElementById('config-summary');
+            const lista = document.getElementById('category-list');
+
+            resumen.innerHTML = `
+                <div class="config-item">
+                    <strong>${config.jugadores || salaActual.maxJugadores || 8}</strong>
+                    Jugadores maximos
+                </div>
+                <div class="config-item">
+                    <strong>${config.impostores ?? 1}</strong>
+                    Impostores
+                </div>
+                <div class="config-item">
+                    <strong>${config.pistas ? 'Si' : 'No'}</strong>
+                    Pistas
+                </div>
+            `;
+
+            lista.innerHTML = '';
+
+            if (categorias.length === 0) {
+                lista.innerHTML = '<span class="category-chip">Sin categorias seleccionadas</span>';
+                return;
+            }
+
+            categorias.forEach(categoria => {
+                const chip = document.createElement('span');
+                chip.className = 'category-chip';
+                chip.textContent = categoria;
+                lista.appendChild(chip);
+            });
+        }
+
+        function obtenerCategoriasVisibles(config) {
+            const nombresDefault = {
+                '1': 'Cosas cotidianas',
+                '2': 'Personajes famosos',
+                '3': 'Futbolistas',
+                '4': 'Peliculas'
+            };
+            const personalizadas = config.categoriasPersonalizadas || [];
+
+            return (config.listas || []).map(id => {
+                const personalizada = personalizadas.find(categoria => categoria.id === id);
+                return personalizada ? personalizada.nombre : nombresDefault[id];
+            }).filter(Boolean);
+        }
+
+        function renderizarJugadores() {
+            const container = document.getElementById('players-list');
+            container.innerHTML = '';
+
+            salaActual.participantes.forEach(jugador => {
+                const esYo = jugador.id === jugadorId;
+                const card = document.createElement('article');
+                card.className = 'online-player-card';
+                card.innerHTML = `
+                    <div class="player-photo ${esYo ? 'editable' : ''}" ${esYo ? 'onclick="abrirModalFoto()"' : ''}>
+                        ${jugador.foto ? `<img src="${escapeHtml(jugador.foto)}" alt="Foto de ${escapeHtml(jugador.nombre)}">` : escapeHtml(jugador.nombre.charAt(0).toUpperCase())}
+                        ${esYo ? '<span class="edit-photo-badge" title="Cambiar foto">&#9998;</span>' : ''}
+                    </div>
+                    <div class="player-info">
+                        <h3>
+                            ${esYo
+                                ? `<button class="editable-name" type="button" onclick="abrirModalNombre()">${escapeHtml(jugador.nombre)} <span>&#9998;</span></button>`
+                                : escapeHtml(jugador.nombre)}
+                        </h3>
+                        <p>${jugador.host ? 'Creador de la sala' : 'Jugador conectado'}</p>
+                    </div>
+                    <span class="status-badge">${jugador.host ? 'Anfitrion' : esYo ? 'Tu' : 'Invitado'}</span>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function abrirModalFoto() {
+            const fotosGrid = document.getElementById('fotos-grid');
+            fotosGrid.innerHTML = '';
+            document.getElementById('modal-overlay').classList.add('activo');
+            document.getElementById('fotos-modal').classList.add('activo');
+
+            fotosDisponibles.forEach(foto => {
+                const div = document.createElement('div');
+                div.className = 'foto-opcion';
+                div.innerHTML = `<img src="${foto}" alt="Foto">`;
+                div.onclick = () => seleccionarFoto(foto);
+                fotosGrid.appendChild(div);
+            });
+
+            const btnImportar = document.createElement('div');
+            btnImportar.className = 'foto-importar';
+            btnImportar.textContent = 'Subir foto';
+            btnImportar.onclick = () => document.getElementById('foto-input').click();
+            fotosGrid.appendChild(btnImportar);
+        }
+
+        function cerrarModalFoto() {
+            document.getElementById('modal-overlay').classList.remove('activo');
+            document.getElementById('fotos-modal').classList.remove('activo');
+        }
+
+        function importarFotoPersonalizada() {
+            const input = document.getElementById('foto-input');
+            const file = input.files[0];
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    seleccionarFoto(e.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+
+            input.value = '';
+        }
+
+        function seleccionarFoto(foto) {
+            const invitado = obtenerJugadorActual();
+            if (!invitado) {
+                return;
+            }
+
+            invitado.foto = foto;
+            sincronizarSala();
+            renderizarSala();
+            cerrarModalFoto();
+            mostrarNotificacion('Foto actualizada', 'success');
+        }
+
+        function abrirModalNombre() {
+            const invitado = obtenerJugadorActual();
+            if (!invitado) {
+                return;
+            }
+
+            document.getElementById('guest-name-input').value = invitado.nombre;
+            document.getElementById('name-modal').style.display = 'block';
+            setTimeout(() => document.getElementById('guest-name-input').focus(), 50);
+        }
+
+        function cerrarModalNombre() {
+            document.getElementById('name-modal').style.display = 'none';
+        }
+
+        function guardarNombreInvitado() {
+            const nuevoNombre = document.getElementById('guest-name-input').value.trim();
+            const invitado = obtenerJugadorActual();
+
+            if (!nuevoNombre) {
+                mostrarNotificacion('Escribe tu nombre');
+                return;
+            }
+
+            if (!invitado) {
+                cerrarModalNombre();
+                return;
+            }
+
+            invitado.nombre = nuevoNombre;
+            sincronizarSala();
+            renderizarSala();
+            cerrarModalNombre();
+            mostrarNotificacion('Nombre actualizado', 'success');
+        }
+
+        function subirCategoriaCsv() {
+            const input = document.getElementById('category-file-input');
+            const file = input.files[0];
+            const invitado = obtenerJugadorActual();
+
+            if (!file || !invitado) {
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const lineas = e.target.result.split('\n').filter(linea => linea.trim() !== '');
+
+                if (lineas.length < 2) {
+                    mostrarNotificacion('El CSV debe tener al menos una fila de datos');
+                    input.value = '';
+                    return;
+                }
+
+                if (!Array.isArray(salaActual.solicitudesCategorias)) {
+                    salaActual.solicitudesCategorias = [];
+                }
+
+                salaActual.solicitudesCategorias.push({
+                    id: `guest-cat-${Date.now()}`,
+                    nombre: file.name.replace(/\.csv$/i, ''),
+                    jugadorId,
+                    jugadorNombre: invitado.nombre,
+                    filas: lineas.length - 1
+                });
+
+                sincronizarSala();
+                mostrarNotificacion('CSV enviado al anfitrion', 'success');
+                input.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function obtenerJugadorActual() {
+            return salaActual.participantes.find(jugador => jugador.id === jugadorId);
+        }
+
+        function sincronizarSala() {
+            const salas = obtenerSalas();
+            const index = salas.findIndex(sala => sala.id === salaActual.id);
+
+            if (index >= 0) {
+                salas[index] = salaActual;
+            }
+
+            guardarSalas(salas);
+            localStorage.setItem('salaOnlineActual', JSON.stringify(salaActual));
+        }
+
+        function actualizarSalaDesdeStorage() {
+            if (!salaActual) {
+                return;
+            }
+
+            const salaGuardada = obtenerSalas().find(sala => sala.id === salaActual.id);
+            if (!salaGuardada) {
+                return;
+            }
+
+            const salaActualStr = JSON.stringify(salaActual);
+            const salaGuardadaStr = JSON.stringify(salaGuardada);
+
+            if (salaActualStr !== salaGuardadaStr) {
+                salaActual = salaGuardada;
+                renderizarSala();
+            }
+        }
+
+        function salirSala() {
+            window.location.href = 'crear_sala.html';
+        }
+
+        function escapeHtml(texto) {
+            const div = document.createElement('div');
+            div.textContent = texto;
+            return div.innerHTML;
+        }
+
+        document.getElementById('guest-name-input').addEventListener('keydown', event => {
+            if (event.key === 'Enter') {
+                guardarNombreInvitado();
+            }
+        });
+
+        window.addEventListener('click', event => {
+            if (event.target.id === 'name-modal') {
+                cerrarModalNombre();
+            }
+        });
+
+        prepararSala();
+        setInterval(actualizarSalaDesdeStorage, 1200);
+    </script>
+</body>
+</html>

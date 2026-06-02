@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salas Online - El Impostor</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <style>
+        body {
+            justify-content: center;
+            padding: 80px 16px 32px;
+        }
+
+        .online-container {
+            width: 100%;
+            max-width: 980px;
+            text-align: center;
+            margin: auto 0;
+        }
+
+        .online-container h1 {
+            margin-bottom: 26px;
+        }
+
+        .online-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(220px, 1fr));
+            gap: 24px;
+            margin: 0 auto 28px;
+        }
+
+        .online-action-card {
+            background-color: white;
+            border: none;
+            border-radius: 15px;
+            padding: 28px 22px;
+            color: #2E7D32;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            min-height: 170px;
+        }
+
+        .online-action-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .online-action-icon {
+            display: block;
+            font-size: 3rem;
+            line-height: 1;
+            margin-bottom: 14px;
+        }
+
+        .online-action-card h2 {
+            font-size: 1.45rem;
+            margin-bottom: 10px;
+        }
+
+        .online-action-card p {
+            color: #555;
+            font-size: 0.98rem;
+            line-height: 1.4;
+        }
+
+        .rooms-panel,
+        .room-lobby {
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            padding: 24px;
+            text-align: left;
+        }
+
+        .modal-content .rooms-panel {
+            padding: 0;
+            box-shadow: none;
+            border-radius: 0;
+        }
+
+        .rooms-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        .rooms-header h2,
+        .room-lobby h2 {
+            color: #2E7D32;
+            font-size: 1.7rem;
+            margin: 0;
+        }
+
+        .rooms-filter {
+            width: min(100%, 320px);
+        }
+
+        .rooms-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .room-card {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            gap: 14px;
+            padding: 16px;
+            border: 2px solid #e2efd9;
+            border-radius: 12px;
+            background-color: #fbfffa;
+        }
+
+        .room-card h3 {
+            color: #2E7D32;
+            font-size: 1.2rem;
+            margin-bottom: 6px;
+        }
+
+        .room-meta {
+            color: #555;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            font-size: 0.92rem;
+        }
+
+        .lock-icon {
+            color: #1B5E20;
+            font-weight: bold;
+        }
+
+        .join-button,
+        .modal-button {
+            padding: 10px 18px;
+            background-color: #2E7D32;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .join-button:hover,
+        .modal-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+            background-color: #1B5E20;
+        }
+
+        .empty-message {
+            color: #666;
+            padding: 18px;
+            text-align: center;
+            border: 2px dashed #d7e7cf;
+            border-radius: 12px;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 22px;
+        }
+
+        .modal-button.secondary {
+            background-color: #777;
+        }
+
+        .modal-button.secondary:hover {
+            background-color: #555;
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #333;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .room-lobby {
+            max-width: 620px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .room-code {
+            display: inline-block;
+            margin: 18px 0;
+            padding: 12px 18px;
+            border-radius: 8px;
+            background-color: #e8f5e9;
+            color: #1B5E20;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .room-lobby p {
+            color: #444;
+            font-size: 1.05rem;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 720px) {
+            body {
+                padding-top: 72px;
+            }
+
+            .online-actions,
+            .room-card {
+                grid-template-columns: 1fr;
+            }
+
+            .rooms-header {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .rooms-filter {
+                width: 100%;
+            }
+
+            .join-button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="notification-container"></div>
+
+    <button class="button-back" onclick="window.location.href='../jugar.html'">Volver</button>
+
+    <main class="online-container" id="main-content">
+        <h1>Salas Online</h1>
+
+        <section class="online-actions" aria-label="Opciones online">
+            <button class="online-action-card" type="button" onclick="abrirModalCrear()">
+                <span class="online-action-icon">&#43;</span>
+                <h2>Crear sala</h2>
+                <p>Elige un nombre y agrega contraseña si quieres una partida privada.</p>
+            </button>
+
+            <button class="online-action-card" type="button" onclick="mostrarListadoSalas()">
+                <span class="online-action-icon">&#128101;</span>
+                <h2>Unirse a sala</h2>
+                <p>Busca una sala disponible y entra al lobby de la partida.</p>
+            </button>
+        </section>
+
+    </main>
+
+    <div class="modal" id="rooms-modal">
+        <div class="modal-content">
+            <span class="close" onclick="cerrarModal('rooms-modal')">&times;</span>
+            <section class="rooms-panel" id="rooms-panel">
+                <div class="rooms-header">
+                    <h2>Salas disponibles</h2>
+                    <input class="text-input rooms-filter" type="search" id="room-filter" placeholder="Filtrar por nombre" autocomplete="off">
+                </div>
+                <div class="rooms-list" id="rooms-list"></div>
+            </section>
+        </div>
+    </div>
+
+    <div class="modal" id="create-room-modal">
+        <div class="modal-content">
+            <span class="close" onclick="cerrarModal('create-room-modal')">&times;</span>
+            <h2>Crear sala online</h2>
+
+            <div class="form-group compact">
+                <label for="room-name">Nombre de la sala</label>
+                <input class="text-input" id="room-name" type="text" maxlength="30" placeholder="Ej. Sala de amigos" autocomplete="off">
+            </div>
+
+            <div class="form-group compact">
+                <label class="checkbox-row" for="use-password">
+                    <input class="checkbox-input" id="use-password" type="checkbox" onchange="togglePasswordField()">
+                    <span>Usar contraseña</span>
+                </label>
+            </div>
+
+            <div class="form-group compact" id="create-password-group" style="display: none;">
+                <label for="room-password">Contraseña</label>
+                <input class="text-input" id="room-password" type="password" maxlength="20" placeholder="Contraseña de la sala" autocomplete="new-password">
+            </div>
+
+            <div class="modal-actions">
+                <button class="modal-button secondary" type="button" onclick="cerrarModal('create-room-modal')">Cancelar</button>
+                <button class="modal-button" type="button" onclick="crearSala()">Crear sala</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="join-password-modal">
+        <div class="modal-content">
+            <span class="close" onclick="cerrarModal('join-password-modal')">&times;</span>
+            <h2>Contraseña requerida</h2>
+
+            <div class="form-group compact">
+                <label for="join-password">Contraseña de la sala</label>
+                <input class="text-input" id="join-password" type="password" placeholder="Ingresa la contraseña" autocomplete="current-password">
+            </div>
+
+            <div class="modal-actions">
+                <button class="modal-button secondary" type="button" onclick="cerrarModal('join-password-modal')">Cancelar</button>
+                <button class="modal-button" type="button" onclick="validarPasswordYUnirse()">Unirse</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'salasOnlineImpostor';
+        const SALAS_DEMO_IDS = ['sala-amigos', 'noche-impostor', 'partida-rapida'];
+        const salasIniciales = [
+            {
+                id: 'sala-amigos',
+                nombre: 'Sala de amigos',
+                password: '',
+                jugadores: 1,
+                maxJugadores: 8,
+                participantes: [
+                    {
+                        id: 'host',
+                        nombre: 'Anfitrion',
+                        foto: '../../src/fotos_perfil/1.jpg',
+                        host: true
+                    }
+                ],
+                config: {
+                    jugadores: 8,
+                    impostores: 1,
+                    listas: [],
+                    pistas: false
+                }
+            }
+        ];
+
+        let salaSeleccionada = null;
+
+        function obtenerSalas() {
+            const guardadas = localStorage.getItem(STORAGE_KEY);
+            if (guardadas) {
+                const salasNormalizadas = normalizarSalas(JSON.parse(guardadas));
+                guardarSalas(salasNormalizadas);
+                return salasNormalizadas;
+            }
+
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(salasIniciales));
+            return salasIniciales;
+        }
+
+        function guardarSalas(salas) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(salas));
+        }
+
+        function normalizarSalas(salas) {
+            const salasSinDemoAntiguas = salas.filter(sala => !SALAS_DEMO_IDS.includes(sala.id) || sala.id === 'sala-amigos');
+            const tieneSalaDemo = salasSinDemoAntiguas.some(sala => sala.id === 'sala-amigos');
+
+            if (!tieneSalaDemo && salasSinDemoAntiguas.length === 0) {
+                return salasIniciales;
+            }
+
+            return salasSinDemoAntiguas.map(sala => prepararSalaParaListado(sala));
+        }
+
+        function prepararSalaParaListado(sala) {
+            if (!Array.isArray(sala.participantes)) {
+                sala.participantes = [
+                    {
+                        id: 'host',
+                        nombre: 'Anfitrion',
+                        foto: '../../src/fotos_perfil/1.jpg',
+                        host: true
+                    }
+                ];
+            }
+
+            if (!sala.config) {
+                sala.config = {
+                    jugadores: Math.max(3, sala.maxJugadores || 8),
+                    impostores: 1,
+                    listas: [],
+                    pistas: false
+                };
+            }
+
+            sala.maxJugadores = sala.config.jugadores || sala.maxJugadores || 8;
+            sala.jugadores = sala.participantes.length;
+            return sala;
+        }
+
+        function mostrarNotificacion(mensaje, tipo = 'error') {
+            const container = document.getElementById('notification-container');
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${tipo}`;
+            notification.textContent = mensaje;
+            container.appendChild(notification);
+
+            setTimeout(() => notification.classList.add('show'), 10);
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        function renderizarSalas() {
+            const filtro = document.getElementById('room-filter').value.trim().toLowerCase();
+            const lista = document.getElementById('rooms-list');
+            const salas = obtenerSalas().filter(sala => sala.nombre.toLowerCase().includes(filtro));
+
+            lista.innerHTML = '';
+
+            if (salas.length === 0) {
+                lista.innerHTML = '<p class="empty-message">No hay salas con ese nombre.</p>';
+                return;
+            }
+
+            salas.forEach(sala => {
+                const card = document.createElement('article');
+                card.className = 'room-card';
+                card.innerHTML = `
+                    <div>
+                        <h3>${escapeHtml(sala.nombre)} ${sala.password ? '<span class="lock-icon" title="Sala con contraseña">&#128274;</span>' : ''}</h3>
+                        <div class="room-meta">
+                            <span>${sala.jugadores}/${sala.maxJugadores} jugadores</span>
+                            <span>${sala.password ? 'Privada' : 'Publica'}</span>
+                        </div>
+                    </div>
+                    <button class="join-button" type="button" onclick="intentarUnirse('${sala.id}')">Unirse</button>
+                `;
+                lista.appendChild(card);
+            });
+        }
+
+        function abrirModalCrear() {
+            document.getElementById('room-name').value = '';
+            document.getElementById('use-password').checked = false;
+            document.getElementById('room-password').value = '';
+            togglePasswordField();
+            abrirModal('create-room-modal');
+            setTimeout(() => document.getElementById('room-name').focus(), 50);
+        }
+
+        function mostrarListadoSalas() {
+            renderizarSalas();
+            abrirModal('rooms-modal');
+            document.getElementById('room-filter').focus();
+        }
+
+        function togglePasswordField() {
+            const activo = document.getElementById('use-password').checked;
+            document.getElementById('create-password-group').style.display = activo ? 'block' : 'none';
+        }
+
+        function crearSala() {
+            const nombre = document.getElementById('room-name').value.trim();
+            const usaPassword = document.getElementById('use-password').checked;
+            const password = document.getElementById('room-password').value.trim();
+
+            if (!nombre) {
+                mostrarNotificacion('Escribe el nombre de la sala');
+                return;
+            }
+
+            if (usaPassword && !password) {
+                mostrarNotificacion('Escribe una contraseña para la sala');
+                return;
+            }
+
+            const salas = obtenerSalas();
+            const nuevaSala = {
+                id: `sala-${Date.now()}`,
+                nombre,
+                password: usaPassword ? password : '',
+                jugadores: 1,
+                maxJugadores: 10,
+                participantes: [
+                    {
+                        id: 'host',
+                        nombre: 'Anfitrion',
+                        foto: '../../src/fotos_perfil/1.jpg',
+                        host: true
+                    }
+                ],
+                config: {
+                    jugadores: 10,
+                    impostores: 1,
+                    listas: [],
+                    pistas: false
+                }
+            };
+
+            salas.unshift(nuevaSala);
+            guardarSalas(salas);
+            cerrarModal('create-room-modal');
+            localStorage.setItem('salaOnlineActual', JSON.stringify(nuevaSala));
+            window.location.href = `sala_online_inicio_crear.html?sala=${encodeURIComponent(nuevaSala.id)}`;
+        }
+
+        function intentarUnirse(id) {
+            const sala = obtenerSalas().find(item => item.id === id);
+            if (!sala) {
+                mostrarNotificacion('La sala ya no esta disponible');
+                renderizarSalas();
+                return;
+            }
+
+            if (!sala.password) {
+                entrarASala(id);
+                return;
+            }
+
+            salaSeleccionada = sala;
+            document.getElementById('join-password').value = '';
+            abrirModal('join-password-modal');
+            setTimeout(() => document.getElementById('join-password').focus(), 50);
+        }
+
+        function validarPasswordYUnirse() {
+            const password = document.getElementById('join-password').value.trim();
+
+            if (!salaSeleccionada) {
+                cerrarModal('join-password-modal');
+                return;
+            }
+
+            if (password !== salaSeleccionada.password) {
+                mostrarNotificacion('Contraseña incorrecta');
+                return;
+            }
+
+            cerrarModal('join-password-modal');
+            entrarASala(salaSeleccionada.id);
+        }
+
+        function entrarASala(id, sumarJugador = true) {
+            const salas = obtenerSalas();
+            const sala = salas.find(item => item.id === id);
+
+            if (!sala) {
+                mostrarNotificacion('La sala ya no esta disponible');
+                return;
+            }
+
+            prepararSalaParaListado(sala);
+
+            if (sumarJugador) {
+                if (sala.participantes.length >= sala.maxJugadores) {
+                    mostrarNotificacion('La sala esta llena');
+                    return;
+                }
+
+                const invitadoId = obtenerIdInvitado();
+                const yaEstaEnSala = sala.participantes.some(jugador => jugador.id === invitadoId);
+
+                if (!yaEstaEnSala) {
+                    sala.participantes.push({
+                        id: invitadoId,
+                        nombre: 'Invitado',
+                        foto: '../../src/fotos_perfil/2.png',
+                        host: false
+                    });
+                }
+
+                sala.jugadores = sala.participantes.length;
+                guardarSalas(salas);
+            }
+
+            localStorage.setItem('salaOnlineActual', JSON.stringify(sala));
+            window.location.href = `sala_online_inicio_invitados.html?sala=${encodeURIComponent(id)}&jugador=${encodeURIComponent(obtenerIdInvitado())}`;
+        }
+
+        function obtenerIdInvitado() {
+            let invitadoId = localStorage.getItem('jugadorOnlineInvitadoId');
+
+            if (!invitadoId) {
+                invitadoId = `guest-${Date.now()}`;
+                localStorage.setItem('jugadorOnlineInvitadoId', invitadoId);
+            }
+
+            return invitadoId;
+        }
+
+        function renderizarLobbySiExiste() {
+            const params = new URLSearchParams(window.location.search);
+            const salaId = params.get('sala');
+
+            if (!salaId) {
+                renderizarSalas();
+                return;
+            }
+
+            const sala = obtenerSalas().find(item => item.id === salaId);
+            const main = document.getElementById('main-content');
+
+            if (!sala) {
+                main.innerHTML = `
+                    <section class="room-lobby">
+                        <h2>Sala no encontrada</h2>
+                        <p>La sala que intentas abrir ya no esta disponible.</p>
+                        <button class="button" onclick="window.location.href='crear_sala.html'">Ver salas</button>
+                    </section>
+                `;
+                return;
+            }
+
+            main.innerHTML = `
+                <section class="room-lobby">
+                    <h1>Sala online</h1>
+                    <h2>${escapeHtml(sala.nombre)} ${sala.password ? '<span class="lock-icon">&#128274;</span>' : ''}</h2>
+                    <span class="room-code">Codigo: ${escapeHtml(sala.id)}</span>
+                    <p>Estas dentro del lobby. Cuando se conecte el backend online, aqui se podran listar jugadores, configurar la partida e iniciar el juego.</p>
+                    <button class="button" onclick="window.location.href='crear_sala.html'">Salir de la sala</button>
+                </section>
+            `;
+        }
+
+        function abrirModal(id) {
+            document.getElementById(id).style.display = 'block';
+        }
+
+        function cerrarModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        function escapeHtml(texto) {
+            const div = document.createElement('div');
+            div.textContent = texto;
+            return div.innerHTML;
+        }
+
+        document.getElementById('room-filter').addEventListener('input', renderizarSalas);
+        document.getElementById('join-password').addEventListener('keydown', event => {
+            if (event.key === 'Enter') {
+                validarPasswordYUnirse();
+            }
+        });
+        document.getElementById('room-name').addEventListener('keydown', event => {
+            if (event.key === 'Enter') {
+                crearSala();
+            }
+        });
+        document.getElementById('room-password').addEventListener('keydown', event => {
+            if (event.key === 'Enter') {
+                crearSala();
+            }
+        });
+
+        window.addEventListener('click', event => {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        });
+
+        renderizarLobbySiExiste();
+    </script>
+</body>
+</html>
